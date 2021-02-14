@@ -1,0 +1,1 @@
+from andushu.modules.seq2seq_encoders.intra_sentence_attention import IntraSentenceAttentionEncoder
