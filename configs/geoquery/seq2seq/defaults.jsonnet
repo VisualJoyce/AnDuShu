@@ -11,6 +11,7 @@ local dataset_path = std.extVar("ANNOTATION_DIR");
     "target_token_indexers": {
       "tokens": {
         "type": "single_id",
+        "namespace": "target_tokens",
       }
     },
   },
@@ -36,7 +37,9 @@ local dataset_path = std.extVar("ANNOTATION_DIR");
     },
     "decoder": {
       "type": "auto_regressive_seq_decoder",
+      "target_namespace": "target_tokens",
       "target_embedder": {
+        "vocab_namespace": "target_tokens",
         "embedding_dim": 100,
         "trainable": true
       },
