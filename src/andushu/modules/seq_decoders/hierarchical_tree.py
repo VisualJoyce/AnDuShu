@@ -18,10 +18,10 @@ from .seq_decoder import SeqDecoder
 from ..decoder_nets.decoder_net import DecoderNet
 
 
-@SeqDecoder.register("auto_regressive_seq_decoder")
-class AutoRegressiveSeqDecoder(SeqDecoder):
+@SeqDecoder.register("hierarchical_tree_decoder")
+class HierarchicalTreeDecoder(SeqDecoder):
     """
-    An autoregressive decoder that can be used for most seq2seq tasks.
+    An hierarchical tree decoder that can be used for most seq2seq tasks.
 
     # Parameters
 
@@ -428,6 +428,8 @@ class AutoRegressiveSeqDecoder(SeqDecoder):
                     top_k_predictions = output_dict["predictions"]
                     # shape: (batch_size, max_predicted_sequence_length)
                     best_predictions = top_k_predictions[:, 0, :]
+
+                    print(best_predictions.size(), targets.size())
 
                     self._tensor_based_metric(best_predictions, targets)  # type: ignore
 

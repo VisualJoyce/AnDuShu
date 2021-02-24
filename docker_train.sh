@@ -17,3 +17,4 @@ docker run --gpus '"'device=$CUDA_VISIBLE_DEVICES'"' --ipc=host --rm -m4g -it \
   -w /src visualjoyce/andushu:latest
 
 #PYTHONPATH=src ANNOTATION_DIR=$PWD/data/annotations/spider/ allennlp train configs/spider/gnn/defaults.jsonnet -s data/output/spider/global_gcn --include-package andushu
+#PYTHONPATH=src ANNOTATION_DIR=$PWD/data/annotations/geoquery/ allennlp train configs/geoquery/seq2tree/defaults.jsonnet -s data/output/geoquery/seq2tree/defaults --include-package andushu
