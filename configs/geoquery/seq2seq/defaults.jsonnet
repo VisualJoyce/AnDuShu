@@ -63,7 +63,7 @@ local dataset_path = std.extVar("ANNOTATION_DIR");
     "batch_sampler": {
       "type": "bucket",
       "padding_noise": 0.0,
-      "batch_size": 15
+      "batch_size": 20
     }
   },
   "trainer": {

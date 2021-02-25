@@ -217,7 +217,8 @@ class HierarchicalTreeDecoder(TreeDecoder):
                 #                  shape: (batch_size, decoder_output_dim)
             }
 
-        state["parent_decoder_hidden"] = decoder_init_state['decoder_hidden'].clone()  # shape: (batch_size, decoder_output_dim)
+        state["parent_decoder_hidden"] = decoder_init_state[
+            'decoder_hidden'].clone()  # shape: (batch_size, decoder_output_dim)
         state.update(decoder_init_state)
 
         for timestep in range(num_decoding_steps):
@@ -500,9 +501,10 @@ class HierarchicalTreeDecoder(TreeDecoder):
 
             output_dict_all = []
             nonterminal_indices = state['source_mask'].new_full(
-                (batch_size,), fill_value=1, dtype=torch.long
+                (batch_size,), fill_value=0, dtype=torch.long
             )
             depth = 0
+            to_build = {}
             while non_terminal_queue:
                 if depth > self._max_decoding_depths:
                     break
@@ -523,47 +525,45 @@ class HierarchicalTreeDecoder(TreeDecoder):
                     if ej < end_min.get(ei, self._max_decoding_steps):
                         end_min[ei] = ej
 
-                depth += 1
-                to_build = {}
                 # check if current timestep is non-terminal and trying to remember the decoder hidden for later use
                 non_tensor = torch.where(best_predictions == self._nonterminal_index)
                 for ci, cj in zip(*non_tensor):
                     ci, cj = ci.item(), cj.item()
                     to_build.setdefault(ci, [])  # find the batch index
                     if cj < end_min.get(ci, 0):
-                        to_build[ci].append(cj)  # append to the batch index
+                        nonterminal_indices[ci] += 1
+                        to_build[ci].append(predictions['nonterminal_hiddens'][cj][ci, 0])  # append to the batch index
 
-                if to_build:
-                    max_depth = max([len(item) for item in to_build.values()])
-                    for d in range(max_depth):
-                        decode_hidden = [None] * batch_size
-                        decode_context = [None] * batch_size
-                        for k, v in to_build.items():
-                            nonterminal_indices[k] += len(v)
-                            if len(v) > d:
-                                timestep = v[d]  # nonterminal timestep
-                                decode_hidden[k] = predictions['nonterminal_hiddens'][timestep][k, 0].clone()
-                                # decode_context[k] = predictions['nonterminal_contexts'][idx][k, 0]
+                depth += 1
 
-                        decode_hidden = [
-                            item if item is not None else decoder_init_state['decoder_hidden'].new_zeros(
-                                self.get_output_dim())
-                            for item in decode_hidden]
-                        decode_context = [
-                            item if item is not None else decoder_init_state['decoder_context'].new_zeros(
-                                self.get_output_dim())
-                            for item in decode_context]
+                extra_depth = max([len(item) for item in to_build.values()]) if to_build else 0
+                if extra_depth > 0:
+                    decode_hidden = [None] * batch_size
+                    decode_context = [None] * batch_size
 
-                        decoder_init_state = {
-                            "decoder_hidden": torch.stack(decode_hidden),  # shape: (batch_size, decoder_output_dim)
-                            "decoder_context": torch.stack(decode_context)
-                            #                  shape: (batch_size, decoder_output_dim)
-                        }
+                    for i in range(batch_size):
+                        if i in to_build and to_build[i]:
+                            decode_hidden[i] = to_build[i].pop(0)
 
-                        tmp_state = {k: v.clone() for k, v in state.items()}
-                        tmp_state.update(decoder_init_state)
-                        tmp_state["parent_decoder_hidden"] = decoder_init_state['decoder_hidden'].clone()
-                        non_terminal_queue.append(tmp_state)
+                    decode_hidden = [
+                        item if item is not None else decoder_init_state['decoder_hidden'].new_zeros(
+                            self.get_output_dim())
+                        for item in decode_hidden]
+                    decode_context = [
+                        item if item is not None else decoder_init_state['decoder_context'].new_zeros(
+                            self.get_output_dim())
+                        for item in decode_context]
+
+                    decoder_init_state = {
+                        "decoder_hidden": torch.stack(decode_hidden),  # shape: (batch_size, decoder_output_dim)
+                        "decoder_context": torch.stack(decode_context)
+                        #                  shape: (batch_size, decoder_output_dim)
+                    }
+
+                    tmp_state = {k: v.clone() for k, v in state.items()}
+                    tmp_state.update(decoder_init_state)
+                    tmp_state["parent_decoder_hidden"] = decoder_init_state['decoder_hidden'].clone()
+                    non_terminal_queue.append(tmp_state)
 
             if production_rules:
                 targets = util.get_token_ids_from_text_field_tensors(target_tokens)
@@ -642,12 +642,11 @@ class HierarchicalTreeDecoder(TreeDecoder):
         nonterminal_indices = output_dict['nonterminal_indices']
         batch_size = output_dict['batch_size']
         productions = [[] for _ in range(batch_size)]
-        for i, item in enumerate(output_dict['output_dict']):
-            # predicted_indices = item["predictions"]
+        for depth, item in enumerate(output_dict['output_dict']):
             item = self._post_process(item)
             predicted_tokens = item["predicted_tokens"]
             for j, pt in enumerate(predicted_tokens):
-                if len(productions[j]) < nonterminal_indices[j]:
+                if nonterminal_indices[j] >= depth:
                     productions[j].append(pt)
 
         output_dict["productions"] = copy.deepcopy(productions)

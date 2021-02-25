@@ -16,7 +16,7 @@ local dataset_path = std.extVar("ANNOTATION_DIR");
     },
   },
   "train_data_path": dataset_path + "geo.train",
-  "validation_data_path": dataset_path + "geo.train",
+  "validation_data_path": dataset_path + "geo.val",
   "model": {
     "type": "seq2tree",
     "source_text_embedder": {
@@ -54,7 +54,7 @@ local dataset_path = std.extVar("ANNOTATION_DIR");
         },
         "bidirectional_input": true
       },
-      "beam_size": 1,
+      "beam_size": 5,
       "max_decoding_steps": 100,
       "max_decoding_depths": 30,
       "token_based_metric": "token_sequence_accuracy"
