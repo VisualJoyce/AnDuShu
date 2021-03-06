@@ -117,6 +117,8 @@ class ComposedSeq2Seq(Model):
             The output tensors from the decoder.
         """
         state = self._encode(source_tokens)
+        state["source_token_ids"] = source_token_ids
+        state["source_to_target"] = source_to_target
 
         return self._decoder(state, target_tokens)
 

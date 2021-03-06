@@ -18,3 +18,4 @@ docker run --gpus '"'device=$CUDA_VISIBLE_DEVICES'"' --ipc=host --rm -m4g -it \
 
 #PYTHONPATH=src ANNOTATION_DIR=$PWD/data/annotations/spider/ allennlp train configs/spider/gnn/defaults.jsonnet -s data/output/spider/global_gcn --include-package andushu
 #PYTHONPATH=src ANNOTATION_DIR=$PWD/data/annotations/geoquery/ allennlp train configs/geoquery/seq2tree/defaults.jsonnet -s data/output/geoquery/seq2tree/defaults --include-package andushu
+#PYTHONPATH=src ANNOTATION_DIR=$PWD/data/annotations/Math23k/ MODEL_NAME=bert-base-uncased  allennlp train  configs/math23k/seq2seq/copynet_glove+bert.jsonnet -s data/output/math23k/seq2seq/copynet_glove+bert --include-package andushu
