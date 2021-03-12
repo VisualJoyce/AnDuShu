@@ -218,12 +218,8 @@ class CopyNetSeq2Seq(Model):
                     predicted_tokens = self._get_predicted_tokens(
                         output_dict["predictions"], metadata, n_best=1
                     )
-                    for pred, meta in zip(predicted_tokens, metadata):
-                        print('---------------------------------')
-                        print(meta)
-                        print(pred)
                     self._token_based_metric(  # type: ignore
-                        predicted_tokens, [x["target_tokens"] for x in metadata]
+                        predicted_tokens, metadata
                     )
 
         return output_dict

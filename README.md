@@ -1,3 +1,5 @@
+![AuDuShu](logo.png)
+
 AnDuShu (案牍术)
 ==============
 
@@ -49,4 +51,14 @@ PYTHONPATH=src ANNOTATION_DIR=$PWD/data/annotations/geoquery/ \
   --predictor seq2seq \
   --include-package andushu data/output/geoquery/seq2seq/model.tar.gz \
   data/annotations/geoquery/geo_test.jsonl 
+```
+
+
+```shell
+root@ce3daedafb62:/src# PYTHONPATH=src ANNOTATION_DIR=$PWD/data/annotations/Math23k/ \
+  MODEL_NAME=bert-base-multilingual-cased \
+  allennlp evaluate data/output/math23k/seq2seq/copynet_mbert/model.tar.gz \
+  data/annotations/Math23k/aggregate_test.json \
+  --output-file data/annotations/Math23k/aggregate_test_results.json \
+  --include-package andushu
 ```

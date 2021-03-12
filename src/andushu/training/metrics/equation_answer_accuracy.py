@@ -25,12 +25,17 @@ class EquationAnswerAccuracy(Metric):
     @overrides
     def __call__(self,
                  predictions: List[List[str]],
-                 gold_targets: List[List[str]]) -> None:
+                 metadata) -> None:
         self._total_counts += len(predictions)
-        for predicted_tokens, gold_tokens in zip(predictions, gold_targets):
+        # for pred, meta in zip(predicted_tokens, metadata):
+        for predicted_tokens, meta in zip(predictions, metadata):
+            gold_tokens = meta['target_tokens']
             if predicted_tokens == gold_tokens:
                 self._correct_counts += 1
             else:
+                print('---------------------------------')
+                print(meta)
+                print(predicted_tokens)
                 try:
                     pred = eval_tree(' '.join(predicted_tokens))
                     ans = eval_tree(' '.join(gold_tokens))

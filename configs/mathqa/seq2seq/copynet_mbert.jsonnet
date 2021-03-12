@@ -25,8 +25,8 @@ local MODEL_NAME = std.extVar("MODEL_NAME");
       }
     },
   },
-  "train_data_path": dataset_path + "math23k_train.json",
-  "validation_data_path": dataset_path + "math23k_test.json",
+  "train_data_path": dataset_path + "train.json",
+  "validation_data_path": dataset_path + "dev.json",
   "model": {
     "type": "copynet_seq2seq",
     "source_text_embedder": {
@@ -62,7 +62,7 @@ local MODEL_NAME = std.extVar("MODEL_NAME");
     "batch_sampler": {
       "type": "bucket",
       "padding_noise": 0.0,
-      "batch_size": 50
+      "batch_size": 10
     }
   },
   "trainer": {
@@ -76,9 +76,10 @@ local MODEL_NAME = std.extVar("MODEL_NAME");
     "learning_rate_scheduler": {
         "type": "polynomial_decay",
     },
-    "grad_norm": 1.0,
+    "grad_norm": 10.0,
     "num_epochs": 150,
     "patience" : 30,
+    "num_gradient_accumulation_steps": 5,
     "cuda_device": 0,
     "validation_metric": "+answer_acc"
   }
