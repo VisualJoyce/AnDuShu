@@ -1,9 +1,9 @@
 ![AuDuShu](logo.png)
 
-AnDuShu (案牍术)
+AnDuShu
 ==============
 
-An inclusive Text2SQL library built over ``allennlp 2``.
+An inclusive natural language to code library built over ``allennlp 2``.
 
 ---------------------------------
 
@@ -53,9 +53,18 @@ PYTHONPATH=src ANNOTATION_DIR=$PWD/data/annotations/geoquery/ \
   data/annotations/geoquery/geo_test.jsonl 
 ```
 
+Math Word Problems
+------------------
 
 ```shell
-root@ce3daedafb62:/src# PYTHONPATH=src ANNOTATION_DIR=$PWD/data/annotations/Math23k/ \
+PYTHONPATH=src ANNOTATION_DIR=$PWD/data/annotations/MathQA/ \
+  MODEL_NAME=bert-base-multilingual-cased  \
+  allennlp train configs/mathqa/seq2seq/copynet_mbert.jsonnet -s data/output/mathqa/seq2seq/copynet_mbert2 \
+  --include-package andushu
+```
+
+```shell
+PYTHONPATH=src ANNOTATION_DIR=$PWD/data/annotations/Math23k/ \
   MODEL_NAME=bert-base-multilingual-cased \
   allennlp evaluate data/output/math23k/seq2seq/copynet_mbert/model.tar.gz \
   data/annotations/Math23k/aggregate_test.json \

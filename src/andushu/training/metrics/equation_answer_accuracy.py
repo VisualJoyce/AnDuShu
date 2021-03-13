@@ -33,12 +33,12 @@ class EquationAnswerAccuracy(Metric):
             if predicted_tokens == gold_tokens:
                 self._correct_counts += 1
             else:
-                print('---------------------------------')
-                print(meta)
-                print(predicted_tokens)
+                # print('---------------------------------')
+                # print(meta)
+                # print(predicted_tokens)
                 try:
-                    pred = eval_tree(' '.join(predicted_tokens))
-                    ans = eval_tree(' '.join(gold_tokens))
+                    pred = eval_tree(' '.join(predicted_tokens), evaluation=True)
+                    ans = eval_tree(' '.join(gold_tokens), evaluation=True)
                     if abs(pred - ans) < 1e-9:
                         self._correct_counts += 1
                     # else:

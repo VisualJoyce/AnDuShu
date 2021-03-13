@@ -441,7 +441,7 @@ def update_tree(tree):
     return tree
 
 
-def eval_tree(tree):
+def eval_tree(tree, evaluation=False):
     tree_copy = Tree.fromstring(tree)
     tree_updated = True
     while tree_updated:
@@ -450,13 +450,11 @@ def eval_tree(tree):
             if isinstance(tree_copy[pos], Tree):
                 leaves = tree_copy[pos].leaves()
                 label = tree_copy[pos].label()
-                if label == 'SubDiv':
-                    code = "1 - {} / {}".format(leaves[0], leaves[1])
-                elif label == 'AddDiv':
-                    code = "1 + {} / {}".format(leaves[0], leaves[1])
-                elif label == 'USub':
+                if label == 'USub':
                     code = "- {}".format(leaves[0])
                 else:
+                    if label == 'Pow' and float(leaves[1]) > 3 and evaluation:
+                        return -1
                     code = "{} {} {}".format(leaves[0], label2op[label], leaves[1])
 
                 val = eval(code)
