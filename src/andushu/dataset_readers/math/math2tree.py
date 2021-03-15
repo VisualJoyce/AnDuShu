@@ -155,87 +155,96 @@ class Math2TreeDatasetReader(DatasetReader):
         elif 'mathqa' in file_path.lower():
             for item in self._read_callable(file_path):
                 yield self.text_to_instance(item)
+        else:
+            with open(file_path, encoding="utf-8") as f:
+                for item in json.load(f):
+                    func = getattr(self, f'_process_{item["process_type"]}')
+                    item_new = func(item)
+                    if item_new:
+                        yield self.text_to_instance(item_new)
+
+    def _process_mathqa(self, item):
+        flag = True
+        for k in ['floor', 'rhombus_perimeter', 'negate_prob',
+                  'choose', 'circle_area', 'volume_cone',
+                  'circumface', 'original_price_before_gain',
+                  'diagonal',
+                  'surface_cylinder', 'min', 'tangent', 'sine',
+                  'reminder', 'original_price_before_loss', 'p_after_gain',
+                  'lcm', 'factorial', 'gcd', 'max', 'surface_sphere', 'volume_sphere',
+                  'surface_rectangular_prism',
+                  'rhombus_area', 'quadrilateral_area',
+                  'volume_cylinder', 'permutation',
+                  'square_edge_by_perimeter', 'speed_in_still_water', 'triangle_area_three_edges',
+                  'volume_rectangular_prism', 'log']:
+            if k in item['annotated_formula']:
+                flag = False
+                break
+
+        if flag:
+            try:
+                tree = self.ast_parser.parse(item['annotated_formula'])
+            except SyntaxError:
+                # syntax_error.append(item)
+                return
+
+            update_tree(tree)
+
+            tree = self.pformat_flat(tree)
+
+            options = [item for item in re.findall('[a-e] \) ([^,]*)', item['options'])]
+            item['answer'] = options[ord(item['correct']) - ord('a')]
+
+            if ':' in item['answer']:
+                return
+
+            try:
+                val = eval_tree(tree)
+            except ZeroDivisionError:
+                # zero_division.append(item)
+                return
+
+            try:
+                ans = parse_answer(item['answer'])
+
+                if ans != 'none':
+                    err = abs(val - eval(ans))
+                    if err < 1e-9:
+                        item['ans'] = eval(ans)
+                        item['segmented_text'] = item['Problem']
+                        item['equation'] = tree
+                        return item
+
+            except Exception as e:
+                print('---------------')
+                print(e, item)
+                print(item['correct'], options, item['options'])
+                print(val, ans)
 
     def _read_callable(self, file_path):
         with open(file_path, encoding="utf-8") as f:
             for item in json.load(f):
-                flag = True
-                for k in ['floor', 'rhombus_perimeter', 'negate_prob',
-                          'choose', 'circle_area', 'volume_cone',
-                          'circumface', 'original_price_before_gain',
-                          'diagonal',
-                          'surface_cylinder', 'min', 'tangent', 'sine',
-                          'reminder', 'original_price_before_loss', 'p_after_gain',
-                          'lcm', 'factorial', 'gcd', 'max', 'surface_sphere', 'volume_sphere',
-                          'surface_rectangular_prism',
-                          'rhombus_area', 'quadrilateral_area',
-                          'volume_cylinder', 'permutation',
-                          'square_edge_by_perimeter', 'speed_in_still_water', 'triangle_area_three_edges',
-                          'volume_rectangular_prism', 'log']:
-                    if k in item['annotated_formula']:
-                        flag = False
-                        break
+                item_new = self._process_mathqa(item)
+                if item_new:
+                    yield item_new
 
-                if flag:
-                    try:
-                        tree = self.ast_parser.parse(item['annotated_formula'])
-                    except SyntaxError:
-                        # syntax_error.append(item)
-                        continue
-
-                    update_tree(tree)
-
-                    tree = self.pformat_flat(tree)
-
-                    options = [item for item in re.findall('[a-e] \) ([^,]*)', item['options'])]
-                    item['answer'] = options[ord(item['correct']) - ord('a')]
-
-                    if ':' in item['answer']:
-                        continue
-
-                    try:
-                        val = eval_tree(tree)
-                    except ZeroDivisionError:
-                        # zero_division.append(item)
-                        continue
-
-                    try:
-                        ans = parse_answer(item['answer'])
-
-                        if ans != 'none':
-                            err = abs(val - eval(ans))
-                            if err < 1e-9:
-                                item['ans'] = eval(ans)
-                                item['segmented_text'] = item['Problem']
-                                item['equation'] = tree
-                                yield item
-
-                    except Exception as e:
-                        print('---------------')
-                        print(e, item)
-                        print(item['correct'], options, item['options'])
-                        print(val, ans)
-                        break
+    def _process_math23k(self, item):
+        if "千米/小时" in item["equation"]:
+            item["equation"] = item["equation"][:-5]
+        item['ans'] = re.sub('(\d+)\(\(', r'\1+((', item['ans'])
+        try:
+            tree, ans, val, tree_v = equation2tree(self.ast_parser, item['equation'], item['ans'])
+            item['equation'] = self.pformat_flat(tree)
+            return item
+        except:
+            print(item)
 
     def _read_expression(self, file_path):
         with open(file_path, encoding="utf-8") as f:
             for item in json.load(f):
-                if "千米/小时" in item["equation"]:
-                    item["equation"] = item["equation"][:-5]
-                # print('{} --------------------------{} {}'.format(item['id'], item['equation'], item['ans']))
-                #
-                # item['en'] = re.sub('([\d\.]+)times', r'\1 times', item['en'])
-                # item['en'] = re.sub('([\d\.]+) %', r'\1%', item['en'])
-                # # item['en'] = re.sub('([\d\.]+) \/ ([\d\.]+)', r'\1/\2', item['en'])
-                # item['en'] = re.sub('(\d+),(\d+)', r'\1\2', item['en']).replace('%', ' / 100')
-                item['ans'] = re.sub('(\d+)\(\(', r'\1+((', item['ans'])
-                # tokens_list = ['--DELIMITER--'] + [t.text for t in self._target_token_indexers['tokens'].spacy(text2int(item['en']))]
-                try:
-                    tree, ans, val, tree_v = equation2tree(self.ast_parser, item['equation'], item['ans'])
-                    item['equation'] = self.pformat_flat(tree)
-                    yield item
-                except:
-                    print(item)
+                item_new = self._process_math23k(item)
+                if item_new:
+                    yield item_new
 
     @staticmethod
     def _tokens_to_ids(tokens: List[Token]) -> List[int]:
