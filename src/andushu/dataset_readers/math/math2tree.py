@@ -1,11 +1,10 @@
 import json
-import logging
 import re
 import warnings
 from typing import List, Dict
 
 import numpy as np
-from allennlp.common.util import START_SYMBOL, END_SYMBOL
+from allennlp.common.util import START_SYMBOL, END_SYMBOL, logger
 from allennlp.data.dataset_readers.dataset_reader import DatasetReader
 from allennlp.data.fields import TextField, ArrayField, MetadataField, NamespaceSwappingField
 from allennlp.data.instance import Instance
@@ -16,13 +15,14 @@ from allennlp.data.tokenizers import (
     SpacyTokenizer,
     PretrainedTransformerTokenizer,
 )
-from nltk import Tree
 from overrides import overrides
 
 # from andushu.dataset_readers.math.equation2tree import equation2tree, callable2tree
-from andushu.dataset_readers.math.equation2tree import AstParser, equation2tree, parse_answer, eval_tree, update_tree
+from andushu.dataset_readers.math.equation2tree import AstParser, equation2tree, parse_answer, eval_tree, update_tree, \
+    pformat_flat
 
-logger = logging.getLogger(__name__)
+
+# logger = logging.getLogger(__name__)
 
 
 @DatasetReader.register("copynet_math2tree")
@@ -119,114 +119,113 @@ class Math2TreeDatasetReader(DatasetReader):
                 UserWarning,
             )
 
-    def pformat_flat(self, tree, nodesep="", parens="()", quotes=False):
-        childstrs = []
-        for child in tree:
-            if isinstance(child, Tree):
-                childstrs.append(self.pformat_flat(child, nodesep, parens, quotes))
-            elif isinstance(child, tuple):
-                childstrs.append("/".join(child))
-            elif isinstance(child, str) and not quotes:
-                childstrs.append("%s" % child)
-            else:
-                childstrs.append(repr(child))
-        if isinstance(tree._label, str):
-            return "%s %s %s %s %s" % (
-                parens[0],
-                tree._label,
-                nodesep,
-                " ".join(childstrs),
-                parens[1],
-            )
-        else:
-            return "%s %s %s %s %s" % (
-                parens[0],
-                repr(tree._label),
-                nodesep,
-                " ".join(childstrs),
-                parens[1],
-            )
-
     @overrides
     def _read(self, file_path):
         if 'math23k' in file_path.lower():
-            for item in self._read_expression(file_path):
+            for item in self._read_math23k(file_path):
                 yield self.text_to_instance(item)
         elif 'mathqa' in file_path.lower():
-            for item in self._read_callable(file_path):
+            for item in self._read_mathqa(file_path):
                 yield self.text_to_instance(item)
         else:
+            errors = []
+            total = 0
             with open(file_path, encoding="utf-8") as f:
                 for item in json.load(f):
+                    total += 1
                     func = getattr(self, f'_process_{item["process_type"]}')
-                    item_new = func(item)
-                    if item_new:
-                        yield self.text_to_instance(item_new)
+                    try:
+                        item = func(item)
+                        status = 'ok' if item is not None else 'err'
+                    except SyntaxError:
+                        status = 'err'
+                    except ZeroDivisionError:
+                        status = 'err'
+                    except ValueError:
+                        status = 'err'
+                    except Exception as e:
+                        status = 'err'
+
+                    if status == 'ok':
+                        yield self.text_to_instance(item)
+                    else:
+                        errors.append(item)
+            logger.info(f"Total instances: {total} \n"
+                        f"Error instances: {len(errors)} \n"
+                        f"Loaded instances: {total - len(errors)}")
 
     def _process_mathqa(self, item):
-        flag = True
-        for k in ['floor', 'rhombus_perimeter', 'negate_prob',
-                  'choose', 'circle_area', 'volume_cone',
-                  'circumface', 'original_price_before_gain',
-                  'diagonal',
-                  'surface_cylinder', 'min', 'tangent', 'sine',
-                  'reminder', 'original_price_before_loss', 'p_after_gain',
-                  'lcm', 'factorial', 'gcd', 'max', 'surface_sphere', 'volume_sphere',
-                  'surface_rectangular_prism',
-                  'rhombus_area', 'quadrilateral_area',
-                  'volume_cylinder', 'permutation',
-                  'square_edge_by_perimeter', 'speed_in_still_water', 'triangle_area_three_edges',
-                  'volume_rectangular_prism', 'log']:
-            if k in item['annotated_formula']:
-                flag = False
-                break
-
-        if flag:
-            try:
-                tree = self.ast_parser.parse(item['annotated_formula'])
-            except SyntaxError:
-                # syntax_error.append(item)
-                return
-
-            update_tree(tree)
-
-            tree = self.pformat_flat(tree)
+        if all([k not in item['annotated_formula'] for k in ['floor',
+                                                             'choose',
+                                                             'min',
+                                                             'tangent',
+                                                             'sine',
+                                                             'reminder',
+                                                             'lcm',
+                                                             'factorial',
+                                                             'gcd',
+                                                             'max',
+                                                             'permutation',
+                                                             'triangle_area_three_edges',
+                                                             'surface_cylinder',
+                                                             'rhombus_perimeter',
+                                                             'surface_rectangular_prism',
+                                                             'speed_in_still_water',
+                                                             'log']]):
+            tree = self.ast_parser.parse(item['annotated_formula'])
+            tree = update_tree(tree)
+            tree = pformat_flat(tree)
 
             options = [item for item in re.findall('[a-e] \) ([^,]*)', item['options'])]
             item['answer'] = options[ord(item['correct']) - ord('a')]
 
             if ':' in item['answer']:
-                return
+                raise ValueError('Answer is not acceptable!')
 
-            try:
-                val = eval_tree(tree)
-            except ZeroDivisionError:
-                # zero_division.append(item)
-                return
+            val = eval_tree(tree)
 
-            try:
-                ans = parse_answer(item['answer'])
+            answer = parse_answer(item['answer'])
+            decimal_len = answer[::-1].find('.')
 
-                if ans != 'none':
-                    err = abs(val - eval(ans))
-                    if err < 1e-9:
-                        item['ans'] = eval(ans)
-                        item['segmented_text'] = item['Problem']
-                        item['equation'] = tree
-                        return item
+            ans = eval(answer)
+            if decimal_len > 0:
+                err = abs(round(val, decimal_len) - ans)
+            else:
+                err = abs(val - ans)
 
-            except Exception as e:
-                print('---------------')
-                print(e, item)
-                print(item['correct'], options, item['options'])
-                print(val, ans)
+            if ans != 'none' and err / val < 1e-4:
+                item['ans'] = ans
+                item['segmented_text'] = item['Problem']
+                item['equation'] = tree
+                return item
+            else:
+                raise ValueError('Answer is not acceptable!')
 
-    def _read_callable(self, file_path):
+    def _read_mathqa(self, file_path):
+        errors = []
+        total = 0
         with open(file_path, encoding="utf-8") as f:
             for item in json.load(f):
-                item_new = self._process_mathqa(item)
-                if item_new:
-                    yield item_new
+                total += 1
+                try:
+                    item = self._process_mathqa(item)
+                    status = 'ok' if item is not None else 'err'
+                except SyntaxError:
+                    status = 'err'
+                except ZeroDivisionError:
+                    status = 'err'
+                except ValueError:
+                    status = 'err'
+                except Exception as e:
+                    status = 'err'
+
+                if status == 'ok':
+                    yield item
+                else:
+                    errors.append(item)
+        logger.info(f"Total instances: {total} \n"
+                    f"Error instances: {len(errors)} \n"
+                    f"Loaded instances: {total - len(errors)}")
 
     def _process_math23k(self, item):
         if "千米/小时" in item["equation"]:
@@ -234,12 +233,12 @@ class Math2TreeDatasetReader(DatasetReader):
         item['ans'] = re.sub('(\d+)\(\(', r'\1+((', item['ans'])
         try:
             tree, ans, val, tree_v = equation2tree(self.ast_parser, item['equation'], item['ans'])
-            item['equation'] = self.pformat_flat(tree)
+            item['equation'] = pformat_flat(tree)
             return item
-        except:
-            print(item)
+        except Exception as e:
+            print(e, item)
 
-    def _read_expression(self, file_path):
+    def _read_math23k(self, file_path):
         with open(file_path, encoding="utf-8") as f:
             for item in json.load(f):
                 item_new = self._process_math23k(item)

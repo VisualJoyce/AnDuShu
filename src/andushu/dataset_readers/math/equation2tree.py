@@ -1,6 +1,6 @@
 import ast
-import math
 import re
+from math import pi
 
 import spacy
 # from Levenshtein import jaro
@@ -80,7 +80,7 @@ def equation2tree(parser, equation, answer, draw=False):
     a_s = percentage(answer)
     a = eval(a_s)
 
-    equation = equation.replace('[', '(').replace(']', ')').strip("x=").replace("^", "**")
+    equation = equation.replace('[', '(').replace(']', ')').strip("x=").replace("^", "**").strip()
     equation = percentage(equation)
 
     tree = parser.parse(equation)
@@ -230,41 +230,6 @@ def subtree_iter(item, tokens_list, subtree=False):
             yield tm, eval_ans
 
 
-# def iter_process(data_type, subtree):
-#     error_count = []
-#     with open(os.path.join(data_dir, 'math23k', 'Math23k', 'math23k_{}_en.json'.format(data_type)), 'r',
-#               encoding='utf8') as f:
-#         data = json.load(f)
-#
-#         for item in data:
-#             if item['id'] in ['4303', '9718', '9761', '10431', '12495', '17520']:
-#                 continue
-#
-#             print('{} --------------------------{} {}'.format(item['id'], item['equation'], item['ans']))
-#
-#             item['en'] = re.sub('([\d\.]+)times', r'\1 times', item['en'])
-#             item['en'] = re.sub('([\d\.]+) %', r'\1%', item['en'])
-#             # item['en'] = re.sub('([\d\.]+) \/ ([\d\.]+)', r'\1/\2', item['en'])
-#             item['en'] = re.sub('(\d+),(\d+)', r'\1\2', item['en']).replace('%', ' / 100')
-#             item['ans'] = re.sub('(\d+)\(\(', r'\1+((', item['ans'])
-#             print(item)
-#             tokens_list = ['--DELIMITER--'] + [t.text for t in nlp(text2int(item['en']))]
-#             print(tokens_list)
-#             # try:
-#             for b in subtree_iter(item, tokens_list, subtree):
-#                 yield b
-#             # except TypeError as e:
-#             #     error_count.append((str(e), item))
-#         print(json.dumps(error_count, ensure_ascii=False, indent=2))
-#         print(len(error_count))
-
-
-#
-# label2op = {'NOp': '', 'Sub': '-', 'Div': '/', 'Pow': '**', 'Mult': '*', 'Add': '+', 'USub': '-',
-#             'SubDiv': '',
-#             'AddDiv': ''}
-
-
 label2op = {
     'NOp': '',
     'Sub': '-',
@@ -296,10 +261,30 @@ func2op = {
     'stream_speed': ('Div', ('Add', None, None), 2),
     'triangle_area': ('Div', ('Mult', None, None), 2),
     'triangle_perimeter': ('Add', ('Add', None, None), None),
+    'surface_sphere': ('Mult', ('Pow', None, 2), ('Mult', 4, 'const_pi')),
+    'volume_sphere': ('Mult', ('Pow', None, 3), ('Mult', ('Div', 4, 3), "const_pi")),
+    'rhombus_area': ('Div', ('Mult', None, None), 2),
+    'quadrilateral_area': ('Div', ('Mult', None, ('Add', None, None)), 2),
+    'volume_cylinder': ('Mult', ('Mult', ('Pow', None, 2), 'const_pi'), None),
+    'circle_area': ('Mult', ('Pow', None, 2), "const_pi"),
+    'volume_cone': ('Div', ('Mult', ('Mult', None, 'const_pi'), None), 3),
+    'circumface': ('Mult', ('Mult', None, 2), "const_pi"),
+    'diagonal': ("Pow", ("Add", ("Pow", None, 2), ("Pow", None, 2)), 1 / 2),
+    'volume_rectangular_prism': ('Mult', ('Mult', None, None), None),
+    'original_price_before_loss': ('Div', None, ('Sub', 1, ('Div', None, 100))),
+    'original_price_before_gain': ('Div', None, ('Add', 1, ('Div', None, 100))),
+    'p_after_gain': ('Mult', ('Add', 1, ('Div', None, 100)), None),
+    'square_edge_by_perimeter': ('Div', None, 4),
+    'negate_prob': ('Sub', 1, None),
+}
+
+change_args_order = {
+    'original_price_before_loss': (1, 0),
+    'original_price_before_gain': (1, 0),
 }
 
 constants = {
-    "const_pi": math.pi,
+    "const_pi": pi,
     "const_5": 5,
     "const_2": 2,
     "const_2.0": 2,
@@ -330,7 +315,7 @@ constants = {
     "const_0.4535": 0.4535,
     "const_2.2046": 2.2046,
     "const_3_6": 3.6,
-    "const_deg_to_rad": math.pi / 180,
+    "const_deg_to_rad": pi / 180,
     "const_180": 180,
     "const_0.5": 0.5,
     "const_0.25": 0.25,
@@ -361,84 +346,70 @@ def parse_answer(answer):
         return f'{candidates[0]} + {candidates[1]} / {candidates[2]}'
 
 
-# def eval_tree(tree):
-#     tree_copy = Tree.fromstring(tree)
-#     tree_updated = True
-#     while tree_updated:
-#         tree_updated = False
-#         for pos in tree_copy.treepositions('postorder'):
-#             if isinstance(tree_copy[pos], Tree):
-#                 leaves = [constants.get(lf, lf) for lf in tree_copy[pos].leaves()]
-#                 label = tree_copy[pos].label()
-#
-#                 if label in ['USub', 'negate']:
-#                     code = "- {}".format(leaves[0])
-#                 elif label in ['sqrt', 'square_edge_by_area']:
-#                     code = "({}) ** 0.5".format(leaves[0])
-#                 elif label in ['cube_edge_by_volume']:
-#                     code = "({}) ** (1 / 3)".format(leaves[0])
-#                 elif label in ['square_area']:
-#                     code = "({}) ** 2".format(leaves[0])
-#                 elif label in ['square_perimeter']:
-#                     code = "({}) * 4".format(leaves[0])
-#                 elif label in ['surface_cube']:
-#                     code = "6 * ({}) ** 2".format(leaves[0])
-#                 elif label in ['volume_cube']:
-#                     code = "({}) ** 3".format(leaves[0])
-#                 elif label in ['inverse']:
-#                     code = "1 / ({})".format(leaves[0])
-#                 elif label in ['stream_speed']:
-#                     code = "({} + {}) / 2".format(leaves[0], leaves[1])
-#                 elif label in ['rectangle_perimeter']:
-#                     code = "({} + {}) * 2".format(leaves[0], leaves[1])
-#                 elif label in ['triangle_perimeter']:
-#                     code = "({} + {} + {})".format(leaves[0], leaves[1], leaves[2])
-#                 elif label in ['triangle_area']:
-#                     code = "({} * {}) / 2".format(leaves[0], leaves[1])
-#                 else:
-#                     code = "{} {} {}".format(leaves[0], label2op[label], leaves[1])
-#
-#                 val = eval(code)
-#
-#                 tree_updated = True
-#                 if not pos:
-#                     return val
-#                 else:
-#                     tree_copy[pos] = val
+def operator_adaptation(ops):
+    if not isinstance(ops, tuple):
+        if ops in func2op:
+            ops = func2op.get(ops, ops)
+            if isinstance(ops, str):
+                ops = (ops, None, None)
+        else:
+            return constants.get(ops, ops)
+
+    op, *args = ops
+
+    new_tree = Tree(op, [])
+
+    for arg in args:
+        new_tree.append(operator_adaptation(arg))
+    return new_tree
+
+
 def update_tree(tree):
     label = tree.label()
-    ops = func2op.get(label, label)
+    new_tree = operator_adaptation(label)
+    if not isinstance(new_tree, Tree):
+        return new_tree
 
-    if isinstance(ops, tuple):
-        if isinstance(ops[1], tuple):
-            op, *args = ops
+    if label in change_args_order:
+        tree = [tree[i] for i in change_args_order[label]]
 
-            if not args[1]:
-                args_1 = tree.pop()
+    for p in new_tree.treepositions():
+        if not new_tree[p]:
+            tmp = tree.pop(0)
+            if isinstance(tmp, Tree):
+                new_tree[p] = update_tree(tmp)
             else:
-                args_1 = args[1]
+                new_tree[p] = constants.get(tmp, tmp)
+    return new_tree
 
-            op2, *args2 = ops[1]
-            tree.set_label(op2)
-            for i, a in enumerate(args2):
-                if a:
-                    tree.insert(i, a)
-            tree = Tree(op, [tree, args_1])
-        else:
-            op, *args = ops
-            tree.set_label(op)
-            for i, a in enumerate(args):
-                if a:
-                    tree.insert(i, a)
-    else:
-        tree.set_label(ops)
 
-    for i, child in enumerate(tree):
+def pformat_flat(tree, nodesep="", parens="()", quotes=False):
+    childstrs = []
+    for child in tree:
         if isinstance(child, Tree):
-            tree[i] = update_tree(child)
+            childstrs.append(pformat_flat(child, nodesep, parens, quotes))
+        elif isinstance(child, tuple):
+            childstrs.append("/".join(child))
+        elif isinstance(child, str) and not quotes:
+            childstrs.append("%s" % child)
         else:
-            tree[i] = constants.get(child, child)
-    return tree
+            childstrs.append(repr(child))
+    if isinstance(tree._label, str):
+        return "%s %s %s %s %s" % (
+            parens[0],
+            tree._label,
+            nodesep,
+            " ".join(childstrs),
+            parens[1],
+        )
+    else:
+        return "%s %s %s %s %s" % (
+            parens[0],
+            repr(tree._label),
+            nodesep,
+            " ".join(childstrs),
+            parens[1],
+        )
 
 
 def eval_tree(tree, evaluation=False):
