@@ -1,6 +1,5 @@
 import ast
 import re
-from math import pi
 
 import spacy
 # from Levenshtein import jaro
@@ -284,7 +283,7 @@ change_args_order = {
 }
 
 constants = {
-    "const_pi": pi,
+    "const_pi": 3.1416,
     "const_5": 5,
     "const_2": 2,
     "const_2.0": 2,
@@ -315,13 +314,21 @@ constants = {
     "const_0.4535": 0.4535,
     "const_2.2046": 2.2046,
     "const_3_6": 3.6,
-    "const_deg_to_rad": pi / 180,
+    "const_deg_to_rad": 0.01745,
     "const_180": 180,
     "const_0.5": 0.5,
     "const_0.25": 0.25,
     "const_0_25": 0.25,
     "const_0_33": 0.33
 }
+
+
+def isfloat(value):
+    try:
+        float(value)
+        return True
+    except ValueError:
+        return False
 
 
 def parse_answer(answer):
@@ -434,14 +441,3 @@ def eval_tree(tree, evaluation=False):
                     return val
                 else:
                     tree_copy[pos] = val
-
-
-if __name__ == '__main__':
-    # a = "1-(-(1/2))"
-    # t = parser.parse(a)
-    # t.draw()
-    # for b in iter_process('train'):
-    #     print(b)
-
-    for b in iter_process('train', False):
-        print(b)

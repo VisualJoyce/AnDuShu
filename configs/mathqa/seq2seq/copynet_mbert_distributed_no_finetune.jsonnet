@@ -75,13 +75,14 @@ local CUDA_DEVICES = std.map(std.parseInt, std.split(std.extVar("CUDA_VISIBLE_DE
   },
   "trainer": {
     "optimizer": {
-      "type": "adam",
-      "lr": 0.01
+        "type": "huggingface_adamw",
+        "lr": 3e-5,
+        "betas": [0.9, 0.999],
+        "eps": 1e-8,
+        "correct_bias": true
     },
     "learning_rate_scheduler": {
-      "type": "noam",
-      "warmup_steps": 1000,
-      "model_size": 200
+        "type": "polynomial_decay",
     },
     "grad_norm": 1.0,
     "num_epochs": 150,

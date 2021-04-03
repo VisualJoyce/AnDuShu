@@ -12,7 +12,7 @@ local CUDA_DEVICES = std.map(std.parseInt, std.split(std.extVar("CUDA_VISIBLE_DE
     'source_tokenizer': {
       "type": "spacy",
       "pos_tags": true,
-      "language": "en_core_web_sm"
+      "language": "zh_core_web_sm"
     },
     'target_tokenizer': {
       "pos_tags": true,
@@ -32,8 +32,8 @@ local CUDA_DEVICES = std.map(std.parseInt, std.split(std.extVar("CUDA_VISIBLE_DE
       }
     },
   },
-  "train_data_path": dataset_path + "MathQA/train.json",
-  "validation_data_path": dataset_path + "MathQA/dev.json",
+  "train_data_path": dataset_path + "MathXLing/train.json",
+  "validation_data_path": dataset_path + "MathXLing/dev.json",
   "model": {
     "type": "copynet_seq2seq",
     "source_text_embedder": {
@@ -70,7 +70,7 @@ local CUDA_DEVICES = std.map(std.parseInt, std.split(std.extVar("CUDA_VISIBLE_DE
     "batch_sampler": {
       "type": "bucket",
       "padding_noise": 0.0,
-      "batch_size": 20
+      "batch_size": 15
     }
   },
   "validation_data_loader": {
@@ -94,7 +94,7 @@ local CUDA_DEVICES = std.map(std.parseInt, std.split(std.extVar("CUDA_VISIBLE_DE
     "grad_norm": 1.0,
     "num_epochs": 150,
     "patience" : 30,
-    "num_gradient_accumulation_steps": std.ceil(80 / std.length(CUDA_DEVICES)),
+    "num_gradient_accumulation_steps": std.ceil(100 / std.length(CUDA_DEVICES)),
     "cuda_device": 0,
     "validation_metric": "+answer_acc"
   },

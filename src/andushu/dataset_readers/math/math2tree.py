@@ -17,12 +17,8 @@ from allennlp.data.tokenizers import (
 )
 from overrides import overrides
 
-# from andushu.dataset_readers.math.equation2tree import equation2tree, callable2tree
 from andushu.dataset_readers.math.equation2tree import AstParser, equation2tree, parse_answer, eval_tree, update_tree, \
-    pformat_flat
-
-
-# logger = logging.getLogger(__name__)
+    pformat_flat, isfloat
 
 
 @DatasetReader.register("copynet_math2tree")
@@ -270,13 +266,6 @@ class Math2TreeDatasetReader(DatasetReader):
         """
         source_string = record['segmented_text']
         target_string = record['equation']
-
-        def isfloat(value):
-            try:
-                float(value)
-                return True
-            except ValueError:
-                return False
 
         tokenized_source = []
         for t in source_string.split():

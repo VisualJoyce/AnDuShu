@@ -5,7 +5,7 @@ local CUDA_DEVICES = std.map(std.parseInt, std.split(std.extVar("CUDA_VISIBLE_DE
 {
   "vocabulary": {
     "type": "from_files",
-    "directory": dataset_path + "vocab_test",
+    "directory": dataset_path + "MathVocabulary",
   },
   "dataset_reader": {
     "type": "copynet_math2tree",
@@ -32,8 +32,8 @@ local CUDA_DEVICES = std.map(std.parseInt, std.split(std.extVar("CUDA_VISIBLE_DE
       }
     },
   },
-  "train_data_path": dataset_path + "train.json",
-  "validation_data_path": dataset_path + "dev.json",
+  "train_data_path": dataset_path + "Math23K/train.json",
+  "validation_data_path": dataset_path + "Math23K/dev.json",
   "model": {
     "type": "copynet_seq2seq",
     "source_text_embedder": {

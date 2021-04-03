@@ -56,11 +56,12 @@ PYTHONPATH=src ANNOTATION_DIR=$PWD/data/annotations/geoquery/ \
 Math Word Problems
 ------------------
 
+Training Math23K using multiple GPUs.
 ```shell
-PYTHONPATH=src ANNOTATION_DIR=$PWD/data/annotations/MathQA/ \
-  MODEL_NAME=bert-base-multilingual-cased  \
-  allennlp train configs/mathqa/seq2seq/copynet_mbert.jsonnet -s data/output/mathqa/seq2seq/copynet_mbert2 \
-  --include-package andushu
+CUDA_VISIBLE_DEVICES=0,1 PYTHONPATH=src ANNOTATION_DIR=$PWD/data/annotations/ \
+  MODEL_NAME=bert-base-multilingual-cased TOKENIZERS_PARALLELISM=false \
+  allennlp train configs/mathxling/seq2seq/copynet_mbert_distributed_no_finetune_vocab.jsonnet \
+  -s data/output/mathxling/seq2seq/copynet_mbert_distributed_no_finetune_vocab --include-package andushu
 ```
 
 ```shell

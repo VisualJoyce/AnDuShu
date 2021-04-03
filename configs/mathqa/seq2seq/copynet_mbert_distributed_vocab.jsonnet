@@ -43,7 +43,7 @@ local CUDA_DEVICES = std.map(std.parseInt, std.split(std.extVar("CUDA_VISIBLE_DE
           "model_name": MODEL_NAME,
           "max_length": 512,
           "last_layer_only": true,
-          "train_parameters": false
+          "train_parameters": true
         }
       }
     },
@@ -70,7 +70,7 @@ local CUDA_DEVICES = std.map(std.parseInt, std.split(std.extVar("CUDA_VISIBLE_DE
     "batch_sampler": {
       "type": "bucket",
       "padding_noise": 0.0,
-      "batch_size": 20
+      "batch_size": 15
     }
   },
   "validation_data_loader": {
@@ -83,18 +83,19 @@ local CUDA_DEVICES = std.map(std.parseInt, std.split(std.extVar("CUDA_VISIBLE_DE
   },
   "trainer": {
     "optimizer": {
-      "type": "adam",
-      "lr": 0.01
+        "type": "huggingface_adamw",
+        "lr": 3e-5,
+        "betas": [0.9, 0.999],
+        "eps": 1e-8,
+        "correct_bias": true
     },
     "learning_rate_scheduler": {
-      "type": "noam",
-      "warmup_steps": 1000,
-      "model_size": 200
+        "type": "polynomial_decay",
     },
     "grad_norm": 1.0,
     "num_epochs": 150,
     "patience" : 30,
-    "num_gradient_accumulation_steps": std.ceil(80 / std.length(CUDA_DEVICES)),
+    "num_gradient_accumulation_steps": std.ceil(10 / std.length(CUDA_DEVICES)),
     "cuda_device": 0,
     "validation_metric": "+answer_acc"
   },

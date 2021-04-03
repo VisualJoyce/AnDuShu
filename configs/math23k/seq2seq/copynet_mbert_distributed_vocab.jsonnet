@@ -12,7 +12,7 @@ local CUDA_DEVICES = std.map(std.parseInt, std.split(std.extVar("CUDA_VISIBLE_DE
     'source_tokenizer': {
       "type": "spacy",
       "pos_tags": true,
-      "language": "en_core_web_sm"
+      "language": "zh_core_web_sm"
     },
     'target_tokenizer': {
       "pos_tags": true,
@@ -32,8 +32,8 @@ local CUDA_DEVICES = std.map(std.parseInt, std.split(std.extVar("CUDA_VISIBLE_DE
       }
     },
   },
-  "train_data_path": dataset_path + "MathQA/train.json",
-  "validation_data_path": dataset_path + "MathQA/dev.json",
+  "train_data_path": dataset_path + "Math23K/train.json",
+  "validation_data_path": dataset_path + "Math23K/dev.json",
   "model": {
     "type": "copynet_seq2seq",
     "source_text_embedder": {
@@ -43,7 +43,7 @@ local CUDA_DEVICES = std.map(std.parseInt, std.split(std.extVar("CUDA_VISIBLE_DE
           "model_name": MODEL_NAME,
           "max_length": 512,
           "last_layer_only": true,
-          "train_parameters": false
+          "train_parameters": true
         }
       }
     },
@@ -70,7 +70,7 @@ local CUDA_DEVICES = std.map(std.parseInt, std.split(std.extVar("CUDA_VISIBLE_DE
     "batch_sampler": {
       "type": "bucket",
       "padding_noise": 0.0,
-      "batch_size": 20
+      "batch_size": 30
     }
   },
   "validation_data_loader": {
@@ -78,23 +78,24 @@ local CUDA_DEVICES = std.map(std.parseInt, std.split(std.extVar("CUDA_VISIBLE_DE
     "batch_sampler": {
       "type": "bucket",
       "padding_noise": 0.0,
-      "batch_size": 300
+      "batch_size": 100
     }
   },
   "trainer": {
     "optimizer": {
-      "type": "adam",
-      "lr": 0.01
+        "type": "huggingface_adamw",
+        "lr": 3e-5,
+        "betas": [0.9, 0.999],
+        "eps": 1e-8,
+        "correct_bias": true
     },
     "learning_rate_scheduler": {
-      "type": "noam",
-      "warmup_steps": 1000,
-      "model_size": 200
+        "type": "polynomial_decay",
     },
     "grad_norm": 1.0,
     "num_epochs": 150,
     "patience" : 30,
-    "num_gradient_accumulation_steps": std.ceil(80 / std.length(CUDA_DEVICES)),
+    "num_gradient_accumulation_steps": std.ceil(5 / std.length(CUDA_DEVICES)),
     "cuda_device": 0,
     "validation_metric": "+answer_acc"
   },
