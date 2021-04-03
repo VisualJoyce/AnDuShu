@@ -8,7 +8,7 @@ NLTK_DATA=${DATA_DIR}/nltk_data
 
 #  --mount src="${DATA_DIR}",dst=/mnt/data,type=bind \
 
-docker run --gpus '"'device=$CUDA_VISIBLE_DEVICES'"' --ipc=host --rm -m4g -it \
+docker run --gpus '"'device=$CUDA_VISIBLE_DEVICES'"' --ipc=host --rm -it \
   --mount src="${WORK_DIR}",dst=/src,type=bind \
   --mount src="$CACHE_DIR",dst=/root/.cache,type=bind \
   --mount src="$ALLENNLP_DIR",dst=/root/.allennlp,type=bind \
