@@ -1,6 +1,13 @@
+local stringToBool(s) =
+  if s == "true" then true
+  else if s == "false" then false
+  else error "invalid boolean: " + std.manifestJson(s);
+
 local dataset_path = std.extVar("ANNOTATION_DIR");
 local MODEL_NAME = std.extVar("MODEL_NAME");
 local CUDA_DEVICES = std.map(std.parseInt, std.split(std.extVar("CUDA_VISIBLE_DEVICES"), ","));
+local POS_TAGS = stringToBool(std.extVar("POS_TAGS"));
+local LANGUAGE = std.extVar("LANGUAGE");
 
 {
   "vocabulary": {
@@ -11,11 +18,11 @@ local CUDA_DEVICES = std.map(std.parseInt, std.split(std.extVar("CUDA_VISIBLE_DE
     "type": "copynet_math2tree",
     'source_tokenizer': {
       "type": "spacy",
-      "pos_tags": true,
-      "language": "en_core_web_sm"
+      "pos_tags": POS_TAGS,
+      "language": LANGUAGE + "_core_web_sm"
     },
     'target_tokenizer': {
-      "pos_tags": true,
+      "pos_tags": POS_TAGS,
       "type": "spacy"
     },
     "source_token_indexers": {
@@ -66,15 +73,13 @@ local CUDA_DEVICES = std.map(std.parseInt, std.split(std.extVar("CUDA_VISIBLE_DE
     "token_based_metric": "equation_answer_accuracy"
   },
   "data_loader": {
-    "num_workers": 4,
     "batch_sampler": {
       "type": "bucket",
       "padding_noise": 0.0,
-      "batch_size": 15
+      "batch_size": 28
     }
   },
   "validation_data_loader": {
-    "num_workers": 4,
     "batch_sampler": {
       "type": "bucket",
       "padding_noise": 0.0,
@@ -95,7 +100,7 @@ local CUDA_DEVICES = std.map(std.parseInt, std.split(std.extVar("CUDA_VISIBLE_DE
     "grad_norm": 1.0,
     "num_epochs": 150,
     "patience" : 30,
-    "num_gradient_accumulation_steps": std.ceil(10 / std.length(CUDA_DEVICES)),
+    "num_gradient_accumulation_steps": std.ceil(5 / std.length(CUDA_DEVICES)),
     "cuda_device": 0,
     "validation_metric": "+answer_acc"
   },

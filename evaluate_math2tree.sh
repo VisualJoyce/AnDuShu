@@ -35,3 +35,5 @@ do
     --include-package andushu
   done
 done
+
+grep -Hn "answer_acc" "${MODEL_DIR}"/*_results.json

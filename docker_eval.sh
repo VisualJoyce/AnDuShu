@@ -7,10 +7,7 @@ ALLENNLP_DIR=${DATA_DIR}/.allennlp
 NLTK_DATA=${DATA_DIR}/nltk_data
 
 PROJECT=$1
-SUB_PROJECT=$2
-CONFIG=$3
-SPACY_LANGUAGE=$4
-MODEL_NAME=$5
+MODEL_DIR=$2
 
 docker run --gpus '"'device=$CUDA_VISIBLE_DEVICES'"' --ipc=host --rm -it \
   --mount src="${WORK_DIR}",dst=/src,type=bind \
@@ -20,4 +17,4 @@ docker run --gpus '"'device=$CUDA_VISIBLE_DEVICES'"' --ipc=host --rm -it \
   --mount src="$NLTK_DATA",dst=/root/nltk_data,type=bind \
   -e NVIDIA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES \
   -w /src visualjoyce/andushu:latest \
-  bash -c "bash train_${PROJECT}.sh ${SUB_PROJECT} ${CONFIG} ${SPACY_LANGUAGE} ${MODEL_NAME}"
+  bash -c "bash evaluate_${PROJECT}.sh ${MODEL_DIR}"

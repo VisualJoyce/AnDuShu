@@ -74,6 +74,13 @@ PYTHONPATH=src ANNOTATION_DIR=$PWD/data/annotations/Math23k/ \
 ```
 
 ```shell
+CUDA_VISIBLE_DEVICES=0,1 PYTHONPATH=src ANNOTATION_DIR=$PWD/data/annotations/   \
+  MODEL_NAME=xlm-roberta-base TOKENIZERS_PARALLELISM=false POS_TAGS=false \
+  allennlp train configs/mathxling/seq2seq/copynet_xlm_distributed_vocab.jsonnet \
+  -s data/output/mathxling/seq2seq/copynet_xlm_distributed_vocab --include-package andushu 
+```
+
+```shell
 CUDA_VISIBLE_DEVICES=0,1 PYTHONPATH=src ANNOTATION_DIR=$PWD/data/annotations/Math23k/ MODEL_NAME=bert-base-multilingual-cased  allennlp train  configs/math23k/seq2seq/copynet_mbert_distributed.jsonnet -s data/output/math23k/seq2seq/copynet_mbert_distributed --include-package andushu
 ```
 
