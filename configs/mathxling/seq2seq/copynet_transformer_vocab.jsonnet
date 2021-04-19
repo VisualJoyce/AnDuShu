@@ -83,7 +83,7 @@ local LANGUAGE = std.extVar("LANGUAGE");
     "batch_sampler": {
       "type": "bucket",
       "padding_noise": 0.0,
-      "batch_size": 100
+      "batch_size": 300
     }
   },
   "trainer": {
@@ -100,11 +100,8 @@ local LANGUAGE = std.extVar("LANGUAGE");
     "grad_norm": 1.0,
     "num_epochs": 150,
     "patience" : 30,
-    "num_gradient_accumulation_steps": std.ceil(10 / std.length(CUDA_DEVICES)),
+    "num_gradient_accumulation_steps": std.ceil(8 / std.length(CUDA_DEVICES)),
     "cuda_device": 0,
     "validation_metric": "+answer_acc"
-  },
-  "distributed": {
-    "cuda_devices": CUDA_DEVICES
   }
 }

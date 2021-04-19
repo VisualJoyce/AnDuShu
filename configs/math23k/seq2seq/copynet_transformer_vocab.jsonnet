@@ -22,8 +22,8 @@ local LANGUAGE = std.extVar("LANGUAGE");
       "language": LANGUAGE + "_core_web_sm"
     },
     'target_tokenizer': {
-      "type": "spacy",
       "pos_tags": POS_TAGS,
+      "type": "spacy"
     },
     "source_token_indexers": {
       "bert": {
@@ -39,8 +39,8 @@ local LANGUAGE = std.extVar("LANGUAGE");
       }
     },
   },
-  "train_data_path": dataset_path + "MathXLing/train.json",
-  "validation_data_path": dataset_path + "MathXLing/dev.json",
+  "train_data_path": dataset_path + "Math23K/train.json",
+  "validation_data_path": dataset_path + "Math23K/dev.json",
   "model": {
     "type": "copynet_seq2seq",
     "source_text_embedder": {
@@ -73,10 +73,11 @@ local LANGUAGE = std.extVar("LANGUAGE");
     "token_based_metric": "equation_answer_accuracy"
   },
   "data_loader": {
+    "num_workers": 4,
     "batch_sampler": {
       "type": "bucket",
       "padding_noise": 0.0,
-      "batch_size": 20
+      "batch_size": 30
     }
   },
   "validation_data_loader": {
@@ -100,11 +101,8 @@ local LANGUAGE = std.extVar("LANGUAGE");
     "grad_norm": 1.0,
     "num_epochs": 150,
     "patience" : 30,
-    "num_gradient_accumulation_steps": std.ceil(10 / std.length(CUDA_DEVICES)),
+    "num_gradient_accumulation_steps": std.ceil(5 / std.length(CUDA_DEVICES)),
     "cuda_device": 0,
     "validation_metric": "+answer_acc"
-  },
-  "distributed": {
-    "cuda_devices": CUDA_DEVICES
   }
 }

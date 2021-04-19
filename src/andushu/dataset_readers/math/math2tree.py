@@ -3,17 +3,17 @@ import re
 import warnings
 from typing import List, Dict
 
+import jieba
 import numpy as np
 from allennlp.common.util import START_SYMBOL, END_SYMBOL, logger
+from allennlp.data import Tokenizer
 from allennlp.data.dataset_readers.dataset_reader import DatasetReader
 from allennlp.data.fields import TextField, ArrayField, MetadataField, NamespaceSwappingField
 from allennlp.data.instance import Instance
 from allennlp.data.token_indexers import TokenIndexer, SingleIdTokenIndexer
 from allennlp.data.tokenizers import (
     Token,
-    Tokenizer,
-    SpacyTokenizer,
-    PretrainedTransformerTokenizer,
+    PretrainedTransformerTokenizer, SpacyTokenizer,
 )
 from overrides import overrides
 
@@ -102,6 +102,7 @@ class Math2TreeDatasetReader(DatasetReader):
         self._target_tokenizer = target_tokenizer or self._source_tokenizer
         self._source_token_indexers = source_token_indexers or {"tokens": SingleIdTokenIndexer()}
         self._target_token_indexers = target_token_indexers or self._source_token_indexers
+        self._chinese_segmentation = True if self._source_tokenizer.spacy.lang == 'zh' else False
         if (
                 isinstance(self._target_tokenizer, PretrainedTransformerTokenizer)
                 and self._target_tokenizer._add_special_tokens
@@ -117,40 +118,48 @@ class Math2TreeDatasetReader(DatasetReader):
 
     @overrides
     def _read(self, file_path):
+        read_type = 'mixed'
         if 'math23k' in file_path.lower():
-            for item in self._read_math23k(file_path):
-                yield self.text_to_instance(item)
+            read_type = 'math23k'
         elif 'mathqa' in file_path.lower():
-            for item in self._read_mathqa(file_path):
-                yield self.text_to_instance(item)
-        else:
-            errors = []
-            total = 0
-            with open(file_path, encoding="utf-8") as f:
-                for item in json.load(f):
-                    total += 1
-                    func = getattr(self, f'_process_{item["process_type"]}')
-                    try:
-                        item = func(item)
-                        status = 'ok' if item is not None else 'err'
-                    except SyntaxError:
-                        status = 'err'
-                    except ZeroDivisionError:
-                        status = 'err'
-                    except ValueError:
-                        status = 'err'
-                    except Exception as e:
-                        status = 'err'
+            read_type = 'mathqa'
 
-                    if status == 'ok':
-                        yield self.text_to_instance(item)
-                    else:
-                        errors.append(item)
-            logger.info(f"Total instances: {total} \n"
-                        f"Error instances: {len(errors)} \n"
-                        f"Loaded instances: {total - len(errors)}")
+        func = getattr(self, f'_read_{read_type}')
+        for item in self.shard_iterable(func(file_path)):
+            yield self.text_to_instance(item)
+
+    def _read_mixed(self, file_path):
+        errors = []
+        total = 0
+        with open(file_path, encoding="utf-8") as f:
+            for item in json.load(f):
+                total += 1
+                func = getattr(self, f'_process_{item["process_type"]}')
+                try:
+                    item = func(item)
+                    status = 'ok' if item is not None else 'err'
+                except SyntaxError:
+                    status = 'err'
+                except ZeroDivisionError:
+                    status = 'err'
+                except ValueError:
+                    status = 'err'
+                except Exception as e:
+                    status = 'err'
+
+                if status == 'ok':
+                    yield item
+                else:
+                    errors.append(item)
+        logger.info(f"Total instances: {total} \n"
+                    f"Error instances: {len(errors)} \n"
+                    f"Loaded instances: {total - len(errors)}")
 
     def _process_mathqa(self, item):
+        if len(item['Problem'].split()) > 128:
+            # print(item)
+            raise ValueError('Problem too long!')
+
         if all([k not in item['annotated_formula'] for k in ['floor',
                                                              'choose',
                                                              'min',
@@ -191,7 +200,7 @@ class Math2TreeDatasetReader(DatasetReader):
 
             if ans != 'none' and err / val < 1e-4:
                 item['ans'] = ans
-                item['segmented_text'] = item['Problem']
+                item['problem'] = item['Problem']
                 item['equation'] = tree
                 return item
             else:
@@ -227,9 +236,33 @@ class Math2TreeDatasetReader(DatasetReader):
         if "千米/小时" in item["equation"]:
             item["equation"] = item["equation"][:-5]
         item['ans'] = re.sub('(\d+)\(\(', r'\1+((', item['ans'])
+        lang = item.get('lang', 'zh')
         try:
             tree, ans, val, tree_v = equation2tree(self.ast_parser, item['equation'], item['ans'])
             item['equation'] = pformat_flat(tree)
+            if lang == 'zh':
+                tokens = []
+                for w in jieba.cut(''.join(item['segmented_text'].split())):
+                    try:
+                        w_val = eval(w)
+                        w_int = int(w_val)
+                        if w_int == w_val:
+                            tokens.append(str(w_int))
+                        else:
+                            tokens.append(w)
+                    except:
+                        tokens.append(w)
+
+                item['segmented_text'] = ' '.join(re.split('(\d+.?\d+)', ' '.join(tokens)))
+                if not self._chinese_segmentation:
+                    tl = []
+                    for w in item['segmented_text'].split():
+                        if isfloat(w):
+                            tl.append(w)
+                        else:
+                            tl.extend(list(w))
+                    item['segmented_text'] = ' '.join(tl)
+            item['problem'] = item['segmented_text']
             return item
         except Exception as e:
             print(e, item)
@@ -264,7 +297,7 @@ class Math2TreeDatasetReader(DatasetReader):
         `Instance`
             See the above for a description of the fields that the instance will contain.
         """
-        source_string = record['segmented_text']
+        source_string = record['problem']
         target_string = record['equation']
 
         tokenized_source = []
