@@ -11,7 +11,7 @@ class TokenSequenceAccuracy(Metric):
     Simple sequence accuracy based on tokens, as opposed to tensors.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, ) -> None:
         self._correct_counts = 0.
         self._total_counts = 0.
 

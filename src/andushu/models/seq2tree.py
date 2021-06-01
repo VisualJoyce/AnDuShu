@@ -10,7 +10,6 @@ from allennlp.nn import util, InitializerApplicator
 from overrides import overrides
 
 from andushu.fields.production_rule_field import ProductionRuleFieldTensors
-from andushu.modules.seq_decoders import SeqDecoder
 from andushu.modules.tree_decoders.tree_decoder import TreeDecoder
 
 

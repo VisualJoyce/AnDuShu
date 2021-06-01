@@ -1,4 +1,4 @@
-from typing import List, Dict
+from typing import List, Dict, Any
 
 from overrides import overrides
 
@@ -25,7 +25,7 @@ class EquationAnswerAccuracy(Metric):
     @overrides
     def __call__(self,
                  predictions: List[List[str]],
-                 metadata) -> None:
+                 metadata: List[Dict[str, Any]]) -> None:
         self._total_counts += len(predictions)
         # for pred, meta in zip(predicted_tokens, metadata):
         for predicted_tokens, meta in zip(predictions, metadata):

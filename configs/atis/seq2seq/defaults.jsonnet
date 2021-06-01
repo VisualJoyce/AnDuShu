@@ -1,4 +1,14 @@
+local stringToBool(s) =
+  if s == "true" then true
+  else if s == "false" then false
+  else error "invalid boolean: " + std.manifestJson(s);
+
 local dataset_path = std.extVar("ANNOTATION_DIR");
+local MODEL_NAME = std.extVar("MODEL_NAME");
+local CUDA_DEVICES = std.map(std.parseInt, std.split(std.extVar("CUDA_VISIBLE_DEVICES"), ","));
+local POS_TAGS = stringToBool(std.extVar("POS_TAGS"));
+local LANGUAGE = std.extVar("LANGUAGE");
+
 
 {
   "dataset_reader": {
@@ -15,10 +25,10 @@ local dataset_path = std.extVar("ANNOTATION_DIR");
       }
     },
   },
-  "train_data_path": dataset_path + "atis.train",
-  "validation_data_path": dataset_path + "atis.val",
+  "train_data_path": dataset_path + "atis/atis.train",
+  "validation_data_path": dataset_path + "atis/atis.val",
   "model": {
-    "type": "composed_seq2seq",
+    "type": "seq2seq",
     "source_text_embedder": {
       "token_embedders": {
         "tokens": {

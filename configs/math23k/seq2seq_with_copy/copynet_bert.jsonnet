@@ -28,7 +28,7 @@ local MODEL_NAME = std.extVar("MODEL_NAME");
   "train_data_path": dataset_path + "math23k_train.json",
   "validation_data_path": dataset_path + "math23k_test.json",
   "model": {
-    "type": "copynet_seq2seq",
+    "type": "seq2seq",
     "source_text_embedder": {
       "token_embedders": {
         "bert": {

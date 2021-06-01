@@ -18,7 +18,7 @@ local dataset_path = std.extVar("ANNOTATION_DIR");
   "train_data_path": dataset_path + "geo.train",
   "validation_data_path": dataset_path + "geo.val",
   "model": {
-    "type": "composed_seq2seq",
+    "type": "seq2seq",
     "source_text_embedder": {
       "token_embedders": {
         "tokens": {

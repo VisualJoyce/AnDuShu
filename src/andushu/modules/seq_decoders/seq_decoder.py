@@ -1,4 +1,4 @@
-from typing import Dict, Optional
+from typing import Dict, Optional, List, Any
 
 import torch
 from torch.nn import Module
@@ -47,9 +47,10 @@ class SeqDecoder(Module, Registrable):
         raise NotImplementedError()
 
     def forward(
-        self,
-        encoder_out: Dict[str, torch.LongTensor],
-        target_tokens: Optional[Dict[str, torch.LongTensor]] = None,
+            self,
+            encoder_out: Dict[str, torch.LongTensor],
+            target_tokens: Optional[Dict[str, torch.LongTensor]] = None,
+            metadata: List[Dict[str, Any]] = None,
     ) -> Dict[str, torch.Tensor]:
         """
         Decoding from encoded states to sequence of outputs

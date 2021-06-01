@@ -12,8 +12,8 @@ from overrides import overrides
 from andushu.modules.seq_decoders import SeqDecoder
 
 
-@Model.register("composed_seq2seq")
-class ComposedSeq2Seq(Model):
+@Model.register("seq2seq")
+class Seq2Seq(Model):
     """
     This `ComposedSeq2Seq` class is a `Model` which takes a sequence, encodes it, and then
     uses the encoded representations to decode another sequence.  You can use this as the basis for
@@ -95,10 +95,12 @@ class ComposedSeq2Seq(Model):
     def forward(
             self,  # type: ignore
             source_tokens: TextFieldTensors,
-            metadata: List[Dict[str, Any]],
             target_tokens: TextFieldTensors = None,
+            source_token_ids: torch.Tensor = None,
+            source_to_target: torch.Tensor = None,
+            metadata: List[Dict[str, Any]] = None,
+            target_token_ids: torch.Tensor = None,
     ) -> Dict[str, torch.Tensor]:
-
         """
         Make forward pass on the encoder and decoder for producing the entire target sequence.
 
@@ -118,9 +120,10 @@ class ComposedSeq2Seq(Model):
         """
         state = self._encode(source_tokens)
         state["source_token_ids"] = source_token_ids
+        state["target_token_ids"] = target_token_ids
         state["source_to_target"] = source_to_target
 
-        return self._decoder(state, target_tokens)
+        return self._decoder(state, target_tokens, metadata)
 
     @overrides
     def make_output_human_readable(
