@@ -1,4 +1,4 @@
-from typing import List, Dict
+from typing import List, Dict, Any
 
 from overrides import overrides
 
@@ -23,9 +23,10 @@ class TokenSequenceAccuracy(Metric):
     @overrides
     def __call__(self,
                  predictions: List[List[str]],
-                 gold_targets: List[List[str]]) -> None:
+                 metadata: List[Dict[str, Any]]) -> None:
         self._total_counts += len(predictions)
-        for predicted_tokens, gold_tokens in zip(predictions, gold_targets):
+        for predicted_tokens, meta in zip(predictions, metadata):
+            gold_tokens = meta['target_tokens']
             if predicted_tokens == gold_tokens:
                 self._correct_counts += 1
 
