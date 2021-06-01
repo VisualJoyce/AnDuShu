@@ -120,7 +120,7 @@ class Seq2Tree(Model):
         """
         state = self._encode(source_tokens)
 
-        return self._decoder(state, target_tokens, production_rules)
+        return self._decoder(state, target_tokens, production_rules, metadata)
 
     @overrides
     def make_output_human_readable(

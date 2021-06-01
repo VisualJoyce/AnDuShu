@@ -1,5 +1,5 @@
 import copy
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Tuple, Optional, Any
 
 import numpy
 import torch
@@ -475,6 +475,7 @@ class HierarchicalTreeDecoder(TreeDecoder):
             encoder_out: Dict[str, torch.LongTensor],
             target_tokens: TextFieldTensors = None,
             production_rules: ProductionRuleFieldTensors = None,
+            metadata: List[Dict[str, Any]] = None,
     ) -> Dict[str, torch.Tensor]:
         # dict_keys(['source_mask',
         #            'encoder_outputs',
@@ -587,7 +588,7 @@ class HierarchicalTreeDecoder(TreeDecoder):
                     })
                     output_dict = self.post_process(output_dict)
                     predicted_tokens = output_dict["predicted_tokens"]
-                    eval_targets = self.indices_to_tokens(targets[:, 1:])
+                    # eval_targets = self.indices_to_tokens(targets[:, 1:])
 
                     # for p, t, e in zip(output_dict['productions'], predicted_tokens, eval_targets):
                     #     print('------------')
@@ -597,7 +598,7 @@ class HierarchicalTreeDecoder(TreeDecoder):
 
                     self._token_based_metric(  # type: ignore
                         predicted_tokens,
-                        eval_targets,
+                        metadata,
                     )
 
         return output_dict
