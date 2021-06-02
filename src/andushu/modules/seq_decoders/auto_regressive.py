@@ -547,6 +547,7 @@ class AutoRegressiveSeqDecoderWithCopy(SeqDecoder):
         self._end_index = self._vocab.get_token_index(END_SYMBOL, self._target_namespace)
         self._oov_index = self._vocab.get_token_index(self._vocab._oov_token, self._target_namespace)
         self._copy_index = self._vocab.add_token_to_namespace(copy_token, self._target_namespace)
+        self.target_embedder.extend_vocab(self._vocab, self._target_namespace)
 
         self._beam_search = BeamSearch(
             self._end_index, max_steps=max_decoding_steps, beam_size=beam_size
@@ -1190,13 +1191,16 @@ class AutoRegressiveSeqDecoderWithCopy(SeqDecoder):
             )
             # shape: (batch_size, 1)
             copy_log_probs_to_add = copy_log_probs_to_add.unsqueeze(-1)
+
             # shape: (batch_size, 1)
             selected_generation_log_probs = generation_log_probs.gather(
                 1, source_to_target_slice.unsqueeze(-1)
             )
+
             combined_scores = util.logsumexp(
                 torch.cat((selected_generation_log_probs, copy_log_probs_to_add), dim=1)
             )
+
             generation_log_probs = generation_log_probs.scatter(
                 -1, source_to_target_slice.unsqueeze(-1), combined_scores.unsqueeze(-1)
             )
