@@ -67,6 +67,8 @@ This repo includes the code for
 }
 ```
 
+Annotations used for this paper can be found at [annotations](https://drive.google.com/drive/folders/1l6o1nE4qNS8gfjKK6Q8edQq4w4I53uIR?usp=sharing).
+
 Training Math23K using multiple GPUs.
 ```shell
 CUDA_VISIBLE_DEVICES=0,1 PYTHONPATH=src ANNOTATION_DIR=$PWD/data/annotations/ \
