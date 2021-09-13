@@ -56,6 +56,17 @@ PYTHONPATH=src ANNOTATION_DIR=$PWD/data/annotations/geoquery/ \
 Math Word Problems
 ------------------
 
+This repo includes the code for 
+```bibtex
+@article{Tan2021InvestigatingMW,
+  title={Investigating Math Word Problems using Pretrained Multilingual Language Models},
+  author={Minghuan Tan and Lei Wang and Lingxiao Jiang and Jing Jiang},
+  journal={ArXiv},
+  year={2021},
+  volume={abs/2105.08928}
+}
+```
+
 Training Math23K using multiple GPUs.
 ```shell
 CUDA_VISIBLE_DEVICES=0,1 PYTHONPATH=src ANNOTATION_DIR=$PWD/data/annotations/ \
