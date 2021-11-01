@@ -4,6 +4,7 @@ import warnings
 from typing import List, Dict
 
 import jieba
+import jsonlines
 import numpy as np
 from allennlp.common.util import START_SYMBOL, END_SYMBOL, logger
 from allennlp.data import Tokenizer
@@ -198,7 +199,7 @@ class Math2TreeDatasetReader(DatasetReader):
             else:
                 err = abs(val - ans)
 
-            if ans != 'none' and err / val < 1e-4:
+            if ans != 'none' and abs(err / val) < 1e-4:
                 item['ans'] = ans
                 item['problem'] = item['Problem']
                 item['equation'] = tree
@@ -209,25 +210,27 @@ class Math2TreeDatasetReader(DatasetReader):
     def _read_mathqa(self, file_path):
         errors = []
         total = 0
-        with open(file_path, encoding="utf-8") as f:
-            for item in json.load(f):
-                total += 1
-                try:
-                    item = self._process_mathqa(item)
-                    status = 'ok' if item is not None else 'err'
-                except SyntaxError:
-                    status = 'err'
-                except ZeroDivisionError:
-                    status = 'err'
-                except ValueError:
-                    status = 'err'
-                except Exception as e:
-                    status = 'err'
+        with jsonlines.open(file_path+'.jsonl', mode="w") as writer:
+            with open(file_path, encoding="utf-8") as f:
+                for item in json.load(f):
+                    total += 1
+                    try:
+                        item = self._process_mathqa(item)
+                        status = 'ok' if item is not None else 'err'
+                    except SyntaxError:
+                        status = 'err'
+                    except ZeroDivisionError:
+                        status = 'err'
+                    except ValueError:
+                        status = 'err'
+                    except Exception as e:
+                        status = 'err'
 
-                if status == 'ok':
-                    yield item
-                else:
-                    errors.append(item)
+                    if status == 'ok':
+                        writer.write(item)
+                        yield item
+                    else:
+                        errors.append(item)
         logger.info(f"Total instances: {total} \n"
                     f"Error instances: {len(errors)} \n"
                     f"Loaded instances: {total - len(errors)}")
