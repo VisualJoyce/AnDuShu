@@ -9,12 +9,11 @@ from allennlp.modules.text_field_embedders import BasicTextFieldEmbedder
 from allennlp.nn import util, InitializerApplicator
 from overrides import overrides
 
-from andushu.fields.production_rule_field import ProductionRuleFieldTensors
-from andushu.modules.tree_decoders.tree_decoder import TreeDecoder
+from andushu.modules.seq_decoders import SeqDecoder
 
 
-@Model.register("seq2tree")
-class Seq2Tree(Model):
+@Model.register("composed_seq2seq")
+class ComposedSeq2Seq(Model):
     """
     This `ComposedSeq2Seq` class is a `Model` which takes a sequence, encodes it, and then
     uses the encoded representations to decode another sequence.  You can use this as the basis for
@@ -49,7 +48,7 @@ class Seq2Tree(Model):
             vocab: Vocabulary,
             source_text_embedder: TextFieldEmbedder,
             encoder: Seq2SeqEncoder,
-            decoder: TreeDecoder,
+            decoder: SeqDecoder,
             tied_source_embedder_key: Optional[str] = None,
             initializer: InitializerApplicator = InitializerApplicator(),
             **kwargs,
@@ -98,7 +97,6 @@ class Seq2Tree(Model):
             source_tokens: TextFieldTensors,
             metadata: List[Dict[str, Any]],
             target_tokens: TextFieldTensors = None,
-            production_rules: ProductionRuleFieldTensors = None,
     ) -> Dict[str, torch.Tensor]:
 
         """
@@ -119,8 +117,10 @@ class Seq2Tree(Model):
             The output tensors from the decoder.
         """
         state = self._encode(source_tokens)
+        state["source_token_ids"] = source_token_ids
+        state["source_to_target"] = source_to_target
 
-        return self._decoder(state, target_tokens, production_rules, metadata)
+        return self._decoder(state, target_tokens)
 
     @overrides
     def make_output_human_readable(
