@@ -1,7 +1,7 @@
 from pyparsing import Word, OneOrMore, alphas, Combine, Regex, Group, Literal, \
     Optional, ZeroOrMore, CaselessKeyword, Keyword, Forward, \
     delimitedList, ParseException, QuotedString, \
-    operatorPrecedence, opAssoc, oneOf, ParserElement
+    infixNotation, opAssoc, oneOf, ParserElement
 
 ParserElement.enablePackrat()
 
@@ -50,7 +50,7 @@ def _expression_parser():
                 Literal(')').suppress()).setParseAction(lambda s, loc, toks: FunctionCallExpression(toks[0], toks[1:]))
     baseExpr = funcCall | value
 
-    expr << operatorPrecedence(baseExpr, [
+    expr << infixNotation(baseExpr, [
         (oneOf('!'), 1, opAssoc.RIGHT, _unaryOpAction),
         (oneOf('+ -'), 1, opAssoc.RIGHT, _unaryOpAction),
         (oneOf('* /'), 2, opAssoc.LEFT, _binOpAction),
