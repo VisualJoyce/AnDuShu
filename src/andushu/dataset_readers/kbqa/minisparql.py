@@ -44,9 +44,9 @@ def _expression_parser():
 
     expr = Forward()
     exprList = delimitedList(expr)
-    funcCall = (Word(alphas + "_") + \
-                Literal('(').suppress() + \
-                Optional(exprList) + \
+    funcCall = (Word(alphas + "_") +
+                Literal('(').suppress() +
+                Optional(exprList) +
                 Literal(')').suppress()).setParseAction(lambda s, loc, toks: FunctionCallExpression(toks[0], toks[1:]))
     baseExpr = funcCall | value
 
