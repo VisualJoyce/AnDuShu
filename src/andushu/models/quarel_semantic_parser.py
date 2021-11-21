@@ -6,21 +6,25 @@ import torch
 
 from allennlp.common.util import pad_sequence_to_length
 from allennlp.data import Vocabulary
-from allennlp.data.fields.production_rule_field import ProductionRule
+# from allennlp.data.fields.production_rule_field import ProductionRule
 from allennlp.models.model import Model
 from allennlp.modules import Attention, TextFieldEmbedder, Seq2SeqEncoder, FeedForward, Embedding
 from allennlp.modules.seq2vec_encoders import Seq2VecEncoder
 from allennlp.modules.time_distributed import TimeDistributed
 from allennlp.nn import util
-from allennlp.semparse.type_declarations import type_declaration
-from allennlp.semparse.type_declarations.type_declaration import START_SYMBOL
-from allennlp.semparse.worlds.quarel_world import QuarelWorld
-from allennlp.semparse import ParsingError
-from allennlp.state_machines import BeamSearch
-from allennlp.state_machines.states import GrammarBasedState, GrammarStatelet, RnnStatelet
-from allennlp.state_machines.trainers import MaximumMarginalLikelihood
-from allennlp.state_machines.transition_functions import LinkingTransitionFunction
+# from allennlp.semparse.type_declarations import type_declaration
+# from allennlp.semparse.type_declarations.type_declaration import START_SYMBOL
+# from allennlp.semparse.worlds.quarel_world import QuarelWorld
+# from allennlp.semparse import ParsingError
+# from allennlp.state_machines import BeamSearch
+# from allennlp.state_machines.states import GrammarBasedState, GrammarStatelet, RnnStatelet
+# from allennlp.state_machines.trainers import MaximumMarginalLikelihood
+# from allennlp.state_machines.transition_functions import LinkingTransitionFunction
 from allennlp.training.metrics import Average, CategoricalAccuracy
+
+from andushu.data.worlds.quarel_world import QuarelWorld
+from andushu.fields.production_rule_field import ProductionRule
+from andushu.nn.beam_search import BeamSearch
 
 
 @Model.register("quarel_parser")
@@ -643,7 +647,8 @@ class QuarelSemanticParser(Model):
                               world: QuarelWorld,
                               possible_actions: List[ProductionRule],
                               linking_scores: torch.Tensor,
-                              entity_types: torch.Tensor) -> GrammarStatelet:
+                              # entity_types: torch.Tensor) -> GrammarStatelet:
+                              entity_types: torch.Tensor):
         """
         This method creates the GrammarStatelet object that's used for decoding.  Part of creating
         that is creating the `valid_actions` dictionary, which contains embedded representations of
