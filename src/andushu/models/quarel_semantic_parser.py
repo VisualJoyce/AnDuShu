@@ -727,7 +727,7 @@ class QuarelSemanticParser(Model):
                                translated_valid_actions,
                                type_declaration.is_nonterminal)
 
-    @overrides
+    # @overrides
     def decode(self, output_dict: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
         """
         This method overrides ``Model.decode``, which gets called after ``Model.forward``, at test
