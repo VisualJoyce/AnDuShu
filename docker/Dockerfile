@@ -27,6 +27,6 @@ RUN pip install torch-geometric
 RUN pip install spacy
 RUN python -m spacy download en_core_web_sm
 RUN python -m spacy download zh_core_web_sm
-RUN pip install jieba
+RUN pip install jieba word2number
 
 WORKDIR /src

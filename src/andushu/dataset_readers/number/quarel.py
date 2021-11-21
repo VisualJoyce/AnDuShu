@@ -2,30 +2,28 @@
 Reader for QuaRel dataset
 """
 
-from typing import Any, Dict, List, Optional, Tuple, Union
 import json
 import logging
 import re
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
-from overrides import overrides
-
 import tqdm
-
 from allennlp.common.file_utils import cached_path
 from allennlp.common.util import JsonDict
-from allennlp.data.instance import Instance
-from allennlp.data.tokenizers import Token, Tokenizer, WordTokenizer
-from allennlp.data.tokenizers.word_stemmer import PorterStemmer
-from allennlp.data.token_indexers import TokenIndexer, SingleIdTokenIndexer
-from allennlp.data.fields import ArrayField, Field, TextField, KnowledgeGraphField, LabelField
-from allennlp.data.fields import IndexField, ListField, MetadataField, ProductionRuleField
-from allennlp.data.fields import SequenceLabelField
 from allennlp.data.dataset_readers.dataset_reader import DatasetReader
-from allennlp.semparse.contexts.knowledge_graph import KnowledgeGraph
-from allennlp.semparse.contexts.quarel_utils import WorldTaggerExtractor, words_from_entity_string
-from allennlp.semparse.contexts.quarel_utils import LEXICAL_CUES, align_entities
-from allennlp.semparse.worlds.quarel_world import QuarelWorld
+from allennlp.data.fields import ArrayField, Field, TextField, LabelField
+from allennlp.data.fields import IndexField, ListField, MetadataField
+from allennlp.data.fields import SequenceLabelField
+from allennlp.data.instance import Instance
+from allennlp.data.token_indexers import TokenIndexer, SingleIdTokenIndexer
+from allennlp.data.tokenizers import Token, Tokenizer, SpacyTokenizer
+from overrides import overrides
+
+# from allennlp.semparse.contexts.knowledge_graph import KnowledgeGraph
+# from allennlp.semparse.contexts.quarel_utils import WorldTaggerExtractor, words_from_entity_string
+# from allennlp.semparse.contexts.quarel_utils import LEXICAL_CUES, align_entities
+# from allennlp.semparse.worlds.quarel_world import QuarelWorld
 
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
@@ -65,6 +63,7 @@ class QuarelDatasetReader(DatasetReader):
     lf_syntax: ``str``
         Which logical form formalism to use
     """
+
     def __init__(self,
                  lazy: bool = False,
                  sample: int = -1,
@@ -82,7 +81,7 @@ class QuarelDatasetReader(DatasetReader):
                  tokenizer: Tokenizer = None,
                  question_token_indexers: Dict[str, TokenIndexer] = None) -> None:
         super().__init__(lazy=lazy)
-        self._tokenizer = tokenizer or WordTokenizer()
+        self._tokenizer = tokenizer or SpacyTokenizer()
         self._question_token_indexers = question_token_indexers or {"tokens": SingleIdTokenIndexer()}
         self._entity_token_indexers = self._question_token_indexers
         self._sample = sample
@@ -128,7 +127,7 @@ class QuarelDatasetReader(DatasetReader):
             for qset in qr_coeff_sets:
                 for attribute in qset:
                     if (self._skip_attributes_regex is not None and
-                                self._skip_attributes_regex.search(attribute)):
+                            self._skip_attributes_regex.search(attribute)):
                         continue
                     # Get text associated with each entity, both from entity identifier and
                     # associated lexical cues, if any
@@ -137,7 +136,7 @@ class QuarelDatasetReader(DatasetReader):
                         for key in self._lexical_cues:
                             if attribute in LEXICAL_CUES[key]:
                                 entity_strings += LEXICAL_CUES[key][attribute]
-                    self._dynamic_entities["a:"+attribute] = " ".join(entity_strings)
+                    self._dynamic_entities["a:" + attribute] = " ".join(entity_strings)
 
         # Update world to include dynamic entities
         if self._use_attr_entities:
@@ -230,7 +229,7 @@ class QuarelDatasetReader(DatasetReader):
                     logical_forms = question_data['logical_forms']
                     # Skip examples with certain attributes
                     if (self._skip_attributes_regex is not None and
-                                self._skip_attributes_regex.search(logical_forms[0])):
+                            self._skip_attributes_regex.search(logical_forms[0])):
                         continue
                     # Somewhat hacky filtering to "friction" subset of questions based on id
                     if not self._compatible_question(question_data):
@@ -378,9 +377,9 @@ class QuarelDatasetReader(DatasetReader):
             if tag == 0:
                 bio_tag = "O"
             elif tag == last_tag:
-                bio_tag = prefix_i + all_tags[tag-1]
+                bio_tag = prefix_i + all_tags[tag - 1]
             else:
-                bio_tag = prefix_b + all_tags[tag-1]
+                bio_tag = prefix_b + all_tags[tag - 1]
             last_tag = tag
             res.append(bio_tag)
         return res
@@ -453,7 +452,7 @@ class QuarelDatasetReader(DatasetReader):
                     tag_tokens = self._tokenizer.tokenize(literal.lower())
                     scores = [fe(tag, tag_tokens, token, i, tokenized_question) for fe in features]
                     # Small tie breaker in favor of longer sequences
-                    score = max(scores) + len(tag_tokens)/100
+                    score = max(scores) + len(tag_tokens) / 100
                     if score > score_max and score >= 0.5:
                         tag_best = tag_index + 1
                         score_max = score
@@ -472,7 +471,7 @@ class QuarelDatasetReader(DatasetReader):
         return re.sub(r"\w+", lambda x: self._stemmer.stem(x.group(0)), phrase)
 
     def _replace_stemmed_entities(self, question_data: JsonDict) -> JsonDict:
-        entity_name_map = {"world1": "worldone", "world2":"worldtwo"}
+        entity_name_map = {"world1": "worldone", "world2": "worldtwo"}
         question = question_data['question']
         entities = question_data['world_extractions']
         entity_pairs: List[Tuple[str, str]] = []
@@ -493,7 +492,7 @@ class QuarelDatasetReader(DatasetReader):
         replacements = {}
         for num_words in range(1, max_words + 1):
             for i in range(len(word_pos) - num_words + 1):
-                sub = question[word_pos[i][0]:word_pos[i+num_words-1][1]]
+                sub = question[word_pos[i][0]:word_pos[i + num_words - 1][1]]
                 new_sub = substitute(sub)
                 if new_sub != sub:
                     replacements[re.escape(sub)] = new_sub
@@ -502,7 +501,7 @@ class QuarelDatasetReader(DatasetReader):
             return question_data
 
         pattern = "|".join(sorted(replacements.keys(), key=lambda x: -len(x)))
-        regex = re.compile("\\b("+pattern+")\\b")
+        regex = re.compile("\\b(" + pattern + ")\\b")
         res = regex.sub(lambda m: replacements[re.escape(m.group(0))], question)
         question_data['question'] = res
         return question_data

@@ -5,24 +5,21 @@ import string
 from collections import defaultdict
 from typing import Dict, List, Union, Tuple, Any
 
+from allennlp.common.file_utils import cached_path
+from allennlp.data.dataset_readers.dataset_reader import DatasetReader
+from allennlp.data.fields import Field, TextField, MetadataField, LabelField, ListField, \
+    SequenceLabelField, SpanField, IndexField
+# from allennlp.data.dataset_readers.reading_comprehension.util import (IGNORED_TOKENS,
+#                                                                       STRIPPED_CHARACTERS,
+#                                                                       make_reading_comprehension_instance,
+#                                                                       split_tokens_by_hyphen)
+from allennlp.data.instance import Instance
+from allennlp.data.token_indexers import SingleIdTokenIndexer, TokenIndexer
+from allennlp.data.tokenizers import Token, Tokenizer, SpacyTokenizer
 from overrides import overrides
 from word2number.w2n import word_to_num
 
-from allennlp.common.file_utils import cached_path
-from allennlp.data.fields import Field, TextField, MetadataField, LabelField, ListField, \
-    SequenceLabelField, SpanField, IndexField
-from allennlp.data.dataset_readers.dataset_reader import DatasetReader
-from allennlp.data.dataset_readers.reading_comprehension.util import (IGNORED_TOKENS,
-                                                                      STRIPPED_CHARACTERS,
-                                                                      make_reading_comprehension_instance,
-                                                                      split_tokens_by_hyphen)
-from allennlp.data.instance import Instance
-from allennlp.data.token_indexers import SingleIdTokenIndexer, TokenIndexer
-from allennlp.data.tokenizers import Token, Tokenizer, WordTokenizer
-
-
 logger = logging.getLogger(__name__)
-
 
 WORD_NUMBER_MAP = {"zero": 0, "one": 1, "two": 2, "three": 3, "four": 4,
                    "five": 5, "six": 6, "seven": 7, "eight": 8,
@@ -82,6 +79,7 @@ class DropReader(DatasetReader):
         being a little more generous in what is being marginalized.  Note that this will not
         affect evaluation.
     """
+
     def __init__(self,
                  tokenizer: Tokenizer = None,
                  token_indexers: Dict[str, TokenIndexer] = None,
@@ -92,7 +90,7 @@ class DropReader(DatasetReader):
                  instance_format: str = "drop",
                  relaxed_span_match_for_finding_labels: bool = True) -> None:
         super().__init__(lazy)
-        self._tokenizer = tokenizer or WordTokenizer()
+        self._tokenizer = tokenizer or SpacyTokenizer()
         self._token_indexers = token_indexers or {"tokens": SingleIdTokenIndexer()}
         self.passage_length_limit = passage_length_limit
         self.question_length_limit = question_length_limit
@@ -187,12 +185,12 @@ class DropReader(DatasetReader):
                                                        # this `answer_texts` will not be used for evaluation
                                                        answer_texts,
                                                        additional_metadata={
-                                                               "original_passage": passage_text,
-                                                               "original_question": question_text,
-                                                               "passage_id": passage_id,
-                                                               "question_id": question_id,
-                                                               "valid_passage_spans": valid_passage_spans,
-                                                               "answer_annotations": answer_annotations})
+                                                           "original_passage": passage_text,
+                                                           "original_question": question_text,
+                                                           "passage_id": passage_id,
+                                                           "question_id": question_id,
+                                                           "valid_passage_spans": valid_passage_spans,
+                                                           "answer_annotations": answer_annotations})
         elif self.instance_format == "bert":
             question_concat_passage_tokens = question_tokens + [Token("[SEP]")] + passage_tokens
             valid_passage_spans = []
@@ -215,11 +213,11 @@ class DropReader(DatasetReader):
                                                 passage_text,
                                                 answer_info,
                                                 additional_metadata={
-                                                        "original_passage": passage_text,
-                                                        "original_question": question_text,
-                                                        "passage_id": passage_id,
-                                                        "question_id": question_id,
-                                                        "answer_annotations": answer_annotations})
+                                                    "original_passage": passage_text,
+                                                    "original_question": question_text,
+                                                    "passage_id": passage_id,
+                                                    "question_id": question_id,
+                                                    "answer_annotations": answer_annotations})
         elif self.instance_format == "drop":
             numbers_in_passage = []
             number_indices = []
@@ -277,13 +275,13 @@ class DropReader(DatasetReader):
                                                     passage_text,
                                                     answer_info,
                                                     additional_metadata={
-                                                            "original_passage": passage_text,
-                                                            "original_question": question_text,
-                                                            "original_numbers": numbers_in_passage,
-                                                            "passage_id": passage_id,
-                                                            "question_id": question_id,
-                                                            "answer_info": answer_info,
-                                                            "answer_annotations": answer_annotations})
+                                                        "original_passage": passage_text,
+                                                        "original_question": question_text,
+                                                        "original_numbers": numbers_in_passage,
+                                                        "passage_id": passage_id,
+                                                        "question_id": question_id,
+                                                        "answer_info": answer_info,
+                                                        "answer_annotations": answer_annotations})
         else:
             raise ValueError(f"Expect the instance format to be \"drop\", \"squad\" or \"bert\", "
                              f"but got {self.instance_format}")
