@@ -19,10 +19,84 @@ from allennlp.data.tokenizers import (
 from overrides import overrides
 
 from andushu.dataset_readers.math.equation2tree import AstParser, equation2tree, parse_answer, eval_tree, update_tree, \
-    pformat_flat, isfloat
+    pformat_flat, isfloat, filtered_ops
 
 
-@DatasetReader.register("copynet_math2tree")
+class Processor:
+
+    @classmethod
+    def process_math23k(cls, ast_parser, item, use_chinese_segmentation):
+        if "千米/小时" in item["equation"]:
+            item["equation"] = item["equation"][:-5]
+        item['ans'] = re.sub('(\d+)\(\(', r'\1+((', item['ans'])
+        lang = item.get('lang', 'zh')
+        try:
+            tree, ans, val, tree_v = equation2tree(ast_parser, item['equation'], item['ans'])
+            item['equation'] = pformat_flat(tree)
+            if lang == 'zh':
+                tokens = []
+                for w in jieba.cut(''.join(item['segmented_text'].split())):
+                    try:
+                        w_val = eval(w)
+                        w_int = int(w_val)
+                        if w_int == w_val:
+                            tokens.append(str(w_int))
+                        else:
+                            tokens.append(w)
+                    except:
+                        tokens.append(w)
+
+                item['segmented_text'] = ' '.join(re.split('(\d+.?\d+)', ' '.join(tokens)))
+                if not use_chinese_segmentation:
+                    tl = []
+                    for w in item['segmented_text'].split():
+                        if isfloat(w):
+                            tl.append(w)
+                        else:
+                            tl.extend(list(w))
+                    item['segmented_text'] = ' '.join(tl)
+            item['problem'] = item['segmented_text']
+            return item
+        except Exception as e:
+            print(e, item)
+
+    @classmethod
+    def process_mathqa(cls, ast_parser, item, ops):
+        if len(item['Problem'].split()) > 128:
+            # print(item)
+            raise ValueError('Problem too long!')
+
+        if all([k not in item['annotated_formula'] for k in ops]):
+            tree = ast_parser.parse(item['annotated_formula'])
+            tree = update_tree(tree)
+            tree = pformat_flat(tree)
+
+            options = [item for item in re.findall('[a-e] \) ([^,]*)', item['options'])]
+            item['answer'] = options[ord(item['correct']) - ord('a')]
+
+            if ':' in item['answer']:
+                raise ValueError('Answer is not acceptable!')
+
+            val = eval_tree(tree)
+
+            answer = parse_answer(item['answer'])
+            decimal_len = answer[::-1].find('.')
+
+            ans = eval(answer)
+            if decimal_len > 0:
+                err = abs(round(val, decimal_len) - ans)
+            else:
+                err = abs(val - ans)
+
+            if ans != 'none' and abs(err / val) < 1e-4:
+                item['ans'] = ans
+                item['problem'] = item['Problem']
+                item['equation'] = tree
+                return item
+            else:
+                raise ValueError('Answer is not acceptable!')
+
+
 class Math2TreeDatasetReader(DatasetReader):
     """
     Read a tsv file containing paired sequences, and create a dataset suitable for a
@@ -117,166 +191,6 @@ class Math2TreeDatasetReader(DatasetReader):
                 UserWarning,
             )
 
-    @overrides
-    def _read(self, file_path):
-        read_type = 'mixed'
-        if 'math23k' in file_path.lower():
-            read_type = 'math23k'
-        elif 'mathqa' in file_path.lower():
-            read_type = 'mathqa'
-
-        func = getattr(self, f'_read_{read_type}')
-        for item in self.shard_iterable(func(file_path)):
-            yield self.text_to_instance(item)
-
-    def _read_mixed(self, file_path):
-        errors = []
-        total = 0
-        with open(file_path, encoding="utf-8") as f:
-            for item in json.load(f):
-                total += 1
-                func = getattr(self, f'_process_{item["process_type"]}')
-                try:
-                    item = func(item)
-                    status = 'ok' if item is not None else 'err'
-                except SyntaxError:
-                    status = 'err'
-                except ZeroDivisionError:
-                    status = 'err'
-                except ValueError:
-                    status = 'err'
-                except Exception as e:
-                    status = 'err'
-
-                if status == 'ok':
-                    yield item
-                else:
-                    errors.append(item)
-        logger.info(f"Total instances: {total} \n"
-                    f"Error instances: {len(errors)} \n"
-                    f"Loaded instances: {total - len(errors)}")
-
-    def _process_mathqa(self, item):
-        if len(item['Problem'].split()) > 128:
-            # print(item)
-            raise ValueError('Problem too long!')
-
-        if all([k not in item['annotated_formula'] for k in ['floor',
-                                                             'choose',
-                                                             'min',
-                                                             'tangent',
-                                                             'sine',
-                                                             'reminder',
-                                                             'lcm',
-                                                             'factorial',
-                                                             'gcd',
-                                                             'max',
-                                                             'permutation',
-                                                             'triangle_area_three_edges',
-                                                             'surface_cylinder',
-                                                             'rhombus_perimeter',
-                                                             'surface_rectangular_prism',
-                                                             'speed_in_still_water',
-                                                             'log']]):
-            tree = self.ast_parser.parse(item['annotated_formula'])
-            tree = update_tree(tree)
-            tree = pformat_flat(tree)
-
-            options = [item for item in re.findall('[a-e] \) ([^,]*)', item['options'])]
-            item['answer'] = options[ord(item['correct']) - ord('a')]
-
-            if ':' in item['answer']:
-                raise ValueError('Answer is not acceptable!')
-
-            val = eval_tree(tree)
-
-            answer = parse_answer(item['answer'])
-            decimal_len = answer[::-1].find('.')
-
-            ans = eval(answer)
-            if decimal_len > 0:
-                err = abs(round(val, decimal_len) - ans)
-            else:
-                err = abs(val - ans)
-
-            if ans != 'none' and abs(err / val) < 1e-4:
-                item['ans'] = ans
-                item['problem'] = item['Problem']
-                item['equation'] = tree
-                return item
-            else:
-                raise ValueError('Answer is not acceptable!')
-
-    def _read_mathqa(self, file_path):
-        errors = []
-        total = 0
-        with jsonlines.open(file_path+'.jsonl', mode="w") as writer:
-            with open(file_path, encoding="utf-8") as f:
-                for item in json.load(f):
-                    total += 1
-                    try:
-                        item = self._process_mathqa(item)
-                        status = 'ok' if item is not None else 'err'
-                    except SyntaxError:
-                        status = 'err'
-                    except ZeroDivisionError:
-                        status = 'err'
-                    except ValueError:
-                        status = 'err'
-                    except Exception as e:
-                        status = 'err'
-
-                    if status == 'ok':
-                        writer.write(item)
-                        yield item
-                    else:
-                        errors.append(item)
-        logger.info(f"Total instances: {total} \n"
-                    f"Error instances: {len(errors)} \n"
-                    f"Loaded instances: {total - len(errors)}")
-
-    def _process_math23k(self, item):
-        if "千米/小时" in item["equation"]:
-            item["equation"] = item["equation"][:-5]
-        item['ans'] = re.sub('(\d+)\(\(', r'\1+((', item['ans'])
-        lang = item.get('lang', 'zh')
-        try:
-            tree, ans, val, tree_v = equation2tree(self.ast_parser, item['equation'], item['ans'])
-            item['equation'] = pformat_flat(tree)
-            if lang == 'zh':
-                tokens = []
-                for w in jieba.cut(''.join(item['segmented_text'].split())):
-                    try:
-                        w_val = eval(w)
-                        w_int = int(w_val)
-                        if w_int == w_val:
-                            tokens.append(str(w_int))
-                        else:
-                            tokens.append(w)
-                    except:
-                        tokens.append(w)
-
-                item['segmented_text'] = ' '.join(re.split('(\d+.?\d+)', ' '.join(tokens)))
-                if not self._chinese_segmentation:
-                    tl = []
-                    for w in item['segmented_text'].split():
-                        if isfloat(w):
-                            tl.append(w)
-                        else:
-                            tl.extend(list(w))
-                    item['segmented_text'] = ' '.join(tl)
-            item['problem'] = item['segmented_text']
-            return item
-        except Exception as e:
-            print(e, item)
-
-    def _read_math23k(self, file_path):
-        with open(file_path, encoding="utf-8") as f:
-            for item in json.load(f):
-                item_new = self._process_math23k(item)
-                if item_new:
-                    yield item_new
-
     @staticmethod
     def _tokens_to_ids(tokens: List[Token]) -> List[int]:
         ids: Dict[str, int] = {}
@@ -352,3 +266,121 @@ class Math2TreeDatasetReader(DatasetReader):
         instance.fields["source_tokens"]._token_indexers = self._source_token_indexers  # type: ignore
         if "target_tokens" in instance.fields:
             instance.fields["target_tokens"]._token_indexers = self._target_token_indexers  # type: ignore
+
+
+@DatasetReader.register("copynet_math23k")
+class Math23KDatasetReader(Math2TreeDatasetReader):
+
+    @overrides
+    def _read(self, file_path):
+        for item in self.shard_iterable(self._read_math23k(file_path)):
+            yield self.text_to_instance(item)
+
+    def _read_math23k(self, file_path):
+        with open(file_path, encoding="utf-8") as f:
+            for item in json.load(f):
+                item_new = Processor.process_math23k(self.ast_parser, item,
+                                                     use_chinese_segmentation=self._chinese_segmentation)
+                if item_new:
+                    yield item_new
+
+
+class MathQADatasetReader(Math2TreeDatasetReader):
+
+    def _read_mathqa(self, file_path, ops_type):
+        errors = []
+        total = 0
+        with jsonlines.open(file_path + f'.{ops_type}.jsonl', mode="w") as writer:
+            with open(file_path, encoding="utf-8") as f:
+                for item in json.load(f):
+                    total += 1
+                    try:
+                        item = Processor.process_mathqa(self.ast_parser, item, filtered_ops[ops_type])
+                        status = 'ok' if item is not None else 'err'
+                    except SyntaxError:
+                        status = 'err'
+                    except ZeroDivisionError:
+                        status = 'err'
+                    except ValueError:
+                        status = 'err'
+                    except Exception as e:
+                        status = 'err'
+
+                    if status == 'ok':
+                        writer.write(item)
+                        yield item
+                    else:
+                        errors.append(item)
+        logger.info(f"Total instances: {total} \n"
+                    f"Error instances: {len(errors)} \n"
+                    f"Loaded instances: {total - len(errors)}")
+
+
+@DatasetReader.register("copynet_mathqa_allow_pow")
+class MathQAAllowPowDatasetReader(MathQADatasetReader):
+
+    @overrides
+    def _read(self, file_path):
+        for item in self.shard_iterable(self._read_mathqa(file_path, 'allow_pow')):
+            yield self.text_to_instance(item)
+
+
+@DatasetReader.register("copynet_mathqa_disallow_pow")
+class MathQADisallowPowDatasetReader(MathQADatasetReader):
+
+    @overrides
+    def _read(self, file_path):
+        for item in self.shard_iterable(self._read_mathqa(file_path, 'disallow_pow')):
+            yield self.text_to_instance(item)
+
+
+class MathXLingDatasetReader(Math2TreeDatasetReader):
+
+    def _read_mixed(self, file_path, op_type):
+        errors = []
+        total = 0
+        with open(file_path, encoding="utf-8") as f:
+            for item in json.load(f):
+                total += 1
+                func = getattr(Processor, f'process_{item["process_type"]}')
+                try:
+                    if item['process_type'] == 'math23k':
+                        item = func(self.ast_parser, item,
+                                    use_chinese_segmentation=self._chinese_segmentation)
+                    else:
+                        item = func(self.ast_parser, item, op_type)
+                    status = 'ok' if item is not None else 'err'
+                except SyntaxError:
+                    status = 'err'
+                except ZeroDivisionError:
+                    status = 'err'
+                except ValueError:
+                    status = 'err'
+                except Exception as e:
+                    status = 'err'
+
+                if status == 'ok':
+                    yield item
+                else:
+                    errors.append(item)
+        logger.info(f"Total instances: {total} \n"
+                    f"Error instances: {len(errors)} \n"
+                    f"Loaded instances: {total - len(errors)}")
+
+
+@DatasetReader.register("copynet_mathxling_allow_pow")
+class MathXLingAllowPowDatasetReader(MathXLingDatasetReader):
+
+    @overrides
+    def _read(self, file_path):
+        for item in self.shard_iterable(self._read_mixed(file_path, 'allow_pow')):
+            yield self.text_to_instance(item)
+
+
+@DatasetReader.register("copynet_mathxling_disallow_pow")
+class MathXLingDisallowPowDatasetReader(MathXLingDatasetReader):
+
+    @overrides
+    def _read(self, file_path):
+        for item in self.shard_iterable(self._read_mixed(file_path, 'disallow_pow')):
+            yield self.text_to_instance(item)

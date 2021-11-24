@@ -239,6 +239,58 @@ label2op = {
     'USub': '-',
 }
 
+filtered_ops = {
+    "allow_pow": [
+        'floor',
+        'choose',
+        'min',
+        'tangent',
+        'sine',
+        'reminder',
+        'lcm',
+        'factorial',
+        'gcd',
+        'max',
+        'permutation',
+        'triangle_area_three_edges',
+        'surface_cylinder',
+        'rhombus_perimeter',
+        'surface_rectangular_prism',
+        'speed_in_still_water',
+        'log'
+    ],
+    "disallow_pow": [
+        'floor',
+        'choose',
+        'min',
+        'tangent',
+        'sine',
+        'reminder',
+        'lcm',
+        'factorial',
+        'gcd',
+        'max',
+        'permutation',
+        'triangle_area_three_edges',
+        'surface_cylinder',
+        'rhombus_perimeter',
+        'surface_rectangular_prism',
+        'speed_in_still_water',
+        'log',
+        'power',
+        'square_area',
+        'sqrt',
+        'square_edge_by_area',
+        'cube_edge_by_volume',
+        'volume_cube',
+        'surface_cube',
+        'surface_sphere',
+        'volume_sphere',
+        'volume_cone',
+        'diagonal'
+    ]
+}
+
 func2op = {
     'add': 'Add',
     'subtract': 'Sub',
