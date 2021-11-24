@@ -15,7 +15,7 @@ local LANGUAGE = std.extVar("LANGUAGE");
     "directory": dataset_path + "MathVocabulary",
   },
   "dataset_reader": {
-    "type": "copynet_math2tree",
+    "type": "copynet_math2tree_mathqa_disallow_pow",
     'source_tokenizer': {
       "type": "spacy",
       "pos_tags": POS_TAGS,
@@ -39,8 +39,8 @@ local LANGUAGE = std.extVar("LANGUAGE");
       }
     },
   },
-  "train_data_path": dataset_path + "Math23K/train.json",
-  "validation_data_path": dataset_path + "Math23K/dev.json",
+  "train_data_path": dataset_path + "MathQA/train.json",
+  "validation_data_path": dataset_path + "MathQA/dev.json",
   "model": {
     "type": "copynet_seq2seq",
     "source_text_embedder": {
@@ -50,7 +50,7 @@ local LANGUAGE = std.extVar("LANGUAGE");
           "model_name": MODEL_NAME,
           "max_length": 512,
           "last_layer_only": true,
-          "train_parameters": false
+          "train_parameters": true
         }
       }
     },
@@ -73,37 +73,36 @@ local LANGUAGE = std.extVar("LANGUAGE");
     "token_based_metric": "equation_answer_accuracy"
   },
   "data_loader": {
+    "num_workers": 8,
     "batch_sampler": {
       "type": "bucket",
       "padding_noise": 0.0,
-      "batch_size": 300
+      "batch_size": 20
     }
   },
   "validation_data_loader": {
     "batch_sampler": {
       "type": "bucket",
       "padding_noise": 0.0,
-      "batch_size": 500
+      "batch_size": 300
     }
   },
   "trainer": {
     "optimizer": {
-      "type": "adam",
-      "lr": 0.01
+        "type": "huggingface_adamw",
+        "lr": 3e-5,
+        "betas": [0.9, 0.999],
+        "eps": 1e-8,
+        "correct_bias": true
     },
     "learning_rate_scheduler": {
-      "type": "noam",
-      "warmup_steps": 1000,
-      "model_size": 200
+        "type": "polynomial_decay",
     },
     "grad_norm": 1.0,
     "num_epochs": 150,
     "patience" : 30,
-    "num_gradient_accumulation_steps": std.ceil(5 / std.length(CUDA_DEVICES)),
+    "num_gradient_accumulation_steps": std.ceil(8 / std.length(CUDA_DEVICES)),
     "cuda_device": 0,
     "validation_metric": "+answer_acc"
-  },
-  "distributed": {
-    "cuda_devices": CUDA_DEVICES
   }
 }
