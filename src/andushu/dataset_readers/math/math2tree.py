@@ -268,7 +268,7 @@ class Math2TreeDatasetReader(DatasetReader):
             instance.fields["target_tokens"]._token_indexers = self._target_token_indexers  # type: ignore
 
 
-@DatasetReader.register("copynet_math23k")
+@DatasetReader.register("copynet_math2tree_math23k")
 class Math23KDatasetReader(Math2TreeDatasetReader):
 
     @overrides
@@ -316,7 +316,7 @@ class MathQADatasetReader(Math2TreeDatasetReader):
                     f"Loaded instances: {total - len(errors)}")
 
 
-@DatasetReader.register("copynet_mathqa_allow_pow")
+@DatasetReader.register("copynet_math2tree_mathqa_allow_pow")
 class MathQAAllowPowDatasetReader(MathQADatasetReader):
 
     @overrides
@@ -325,7 +325,7 @@ class MathQAAllowPowDatasetReader(MathQADatasetReader):
             yield self.text_to_instance(item)
 
 
-@DatasetReader.register("copynet_mathqa_disallow_pow")
+@DatasetReader.register("copynet_math2tree_mathqa_disallow_pow")
 class MathQADisallowPowDatasetReader(MathQADatasetReader):
 
     @overrides
@@ -368,7 +368,7 @@ class MathXLingDatasetReader(Math2TreeDatasetReader):
                     f"Loaded instances: {total - len(errors)}")
 
 
-@DatasetReader.register("copynet_mathxling_allow_pow")
+@DatasetReader.register("copynet_math2tree_mathxling_allow_pow")
 class MathXLingAllowPowDatasetReader(MathXLingDatasetReader):
 
     @overrides
@@ -377,7 +377,7 @@ class MathXLingAllowPowDatasetReader(MathXLingDatasetReader):
             yield self.text_to_instance(item)
 
 
-@DatasetReader.register("copynet_mathxling_disallow_pow")
+@DatasetReader.register("copynet_math2tree_mathxling_disallow_pow")
 class MathXLingDisallowPowDatasetReader(MathXLingDatasetReader):
 
     @overrides

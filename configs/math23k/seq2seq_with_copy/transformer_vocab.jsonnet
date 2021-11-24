@@ -15,7 +15,7 @@ local LANGUAGE = std.extVar("LANGUAGE");
     "directory": dataset_path + "MathVocabulary",
   },
   "dataset_reader": {
-    "type": "copynet_math2tree",
+    "type": "copynet_math2tree_math23k",
     'source_tokenizer': {
       "type": "spacy",
       "pos_tags": POS_TAGS,
