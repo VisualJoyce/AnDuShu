@@ -69,62 +69,22 @@ This repo includes the code for
 
 Annotations used for this paper can be found at [annotations](https://drive.google.com/drive/folders/1l6o1nE4qNS8gfjKK6Q8edQq4w4I53uIR?usp=sharing).
 
-Training Math23K using multiple GPUs.
+Training Math23K using `bert-base-multilingual-cased`.
 ```shell
-CUDA_VISIBLE_DEVICES=0,1 PYTHONPATH=src ANNOTATION_DIR=$PWD/data/annotations/ \
-  MODEL_NAME=bert-base-multilingual-cased TOKENIZERS_PARALLELISM=false \
-  allennlp train configs/mathxling/seq2seq/copynet_mbert_distributed_no_finetune_vocab.jsonnet \
-  -s data/output/mathxling/seq2seq/copynet_mbert_distributed_no_finetune_vocab --include-package andushu
+CUDA_VISIBLE_DEVICES=1 bash docker_train.sh math2tree math23k transformer_vocab zh bert-base-multilingual-cased
 ```
 
+Training over MathQA-Adapted without `Pow`.
 ```shell
-PYTHONPATH=src ANNOTATION_DIR=$PWD/data/annotations/Math23k/ \
-  MODEL_NAME=bert-base-multilingual-cased \
-  allennlp evaluate data/output/math23k/seq2seq/copynet_mbert/model.tar.gz \
-  data/annotations/Math23k/aggregate_test.json \
-  --output-file data/annotations/Math23k/aggregate_test_results.json \
-  --include-package andushu
+CUDA_VISIBLE_DEVICES=1 bash docker_train.sh math2tree mathqa transformer_vocab_disallow_pow en bert-base-multilingual-cased
 ```
 
+Training over MathQA-Adapted with `Pow`.
 ```shell
-CUDA_VISIBLE_DEVICES=0,1 PYTHONPATH=src ANNOTATION_DIR=$PWD/data/annotations/   \
-  MODEL_NAME=xlm-roberta-base TOKENIZERS_PARALLELISM=false POS_TAGS=false \
-  allennlp train configs/mathxling/seq2seq/copynet_xlm_distributed_vocab.jsonnet \
-  -s data/output/mathxling/seq2seq/copynet_xlm_distributed_vocab --include-package andushu 
+CUDA_VISIBLE_DEVICES=1 bash docker_train.sh math2tree mathqa transformer_vocab_allow_pow en bert-base-multilingual-cased
 ```
 
+Training over MathXLing without `Pow`.
 ```shell
-CUDA_VISIBLE_DEVICES=0,1 PYTHONPATH=src ANNOTATION_DIR=$PWD/data/annotations/Math23k/ MODEL_NAME=bert-base-multilingual-cased  allennlp train  configs/math23k/seq2seq/copynet_mbert_distributed.jsonnet -s data/output/math23k/seq2seq/copynet_mbert_distributed --include-package andushu
-```
-
-```shell
-CUDA_VISIBLE_DEVICES=0,1 PYTHONPATH=src ANNOTATION_DIR=$PWD/data/annotations/MathXLing/ MODEL_NAME=bert-base-multilingual-cased  allennlp train  configs/math23k/seq2seq/copynet_mbert_distributed.jsonnet -s data/output/math23k/seq2seq/copynet_mbert_distributed --include-package andushu
-```
-
-```shell
-CUDA_VISIBLE_DEVICES=0,1 PYTHONPATH=src ANNOTATION_DIR=$PWD/data/annotations/MathXLing/ MODEL_NAME=bert-base-multilingual-cased  allennlp train  configs/mathxling/seq2seq/copynet_mbert_distributed.jsonnet -s data/output/mathxling/seq2seq/copynet_mbert_distributed --include-package andushu
-```
-```shell
-PYTHONPATH=src ANNOTATION_DIR=$PWD/data/annotations/Math23K/ MODEL_NAME=bert-base-multilingual-cased  allennlp evaluate data/output/math23k/seq2seq/copynet_mbert_distributed/model.tar.gz data/annotations/Math23K/dev.json --output-file data/output/math23k/seq2seq/copynet_mbert_distributed/dev_results.json --include-package andushu
-
-PYTHONPATH=src ANNOTATION_DIR=$PWD/data/annotations/Math23K/ MODEL_NAME=bert-base-multilingual-cased  allennlp evaluate data/output/math23k/seq2seq/copynet_mbert_distributed/model.tar.gz data/annotations/Math23K/math23k_test.json --output-file data/output/math23k/seq2seq/copynet_mbert_distributed/test_results.json --include-package andushu
-
-PYTHONPATH=src ANNOTATION_DIR=$PWD/data/annotations/Math23K/ MODEL_NAME=bert-base-multilingual-cased  allennlp evaluate data/output/math23k/seq2seq/copynet_mbert_distributed/model.tar.gz data/annotations/MathQA/dev.json --output-file data/output/math23k/seq2seq/copynet_mbert_distributed/mathqa_dev_results.json --include-package andushu
-
-PYTHONPATH=src ANNOTATION_DIR=$PWD/data/annotations/Math23K/ MODEL_NAME=bert-base-multilingual-cased  allennlp evaluate data/output/math23k/seq2seq/copynet_mbert_distributed/model.tar.gz data/annotations/MathQA/test.json --output-file data/output/math23k/seq2seq/copynet_mbert_distributed/mathqa_test_results.json --include-package andushu
-
-```
-
-
-```shell
-PYTHONPATH=src ANNOTATION_DIR=$PWD/data/annotations/Math23K/ MODEL_NAME=bert-base-multilingual-cased  allennlp evaluate data/output/math23k/seq2seq/copynet_mbert_distributed/model.tar.gz data/annotations/MathXLing/multiarith_en.json --output-file data/output/math23k/seq2seq/copynet_mbert_distributed/multiarith_en_results.json --include-package andushu
-
-PYTHONPATH=src ANNOTATION_DIR=$PWD/data/annotations/Math23K/ MODEL_NAME=bert-base-multilingual-cased  allennlp evaluate data/output/math23k/seq2seq/copynet_mbert_distributed/model.tar.gz data/annotations/MathXLing/singleop_zh.json --output-file data/output/math23k/seq2seq/copynet_mbert_distributed/singleop_zh_results.json --include-package andushu
-
-PYTHONPATH=src ANNOTATION_DIR=$PWD/data/annotations/Math23K/ MODEL_NAME=bert-base-multilingual-cased  allennlp evaluate data/output/math23k/seq2seq/copynet_mbert_distributed/model.tar.gz data/annotations/MathXLing/addsub_en.json --output-file data/output/math23k/seq2seq/copynet_mbert_distributed/addsub_en_results.json --include-package andushu
-```
-
-
-```shell
-PYTHONPATH=src ANNOTATION_DIR=$PWD/data/annotations/MathXLing/ MODEL_NAME=bert-base-multilingual-cased  allennlp evaluate data/output/mathxling/seq2seq/copynet_mbert_distributed/model.tar.gz data/annotations/Math23K/math23k_test.json --output-file data/output/mathxling/seq2seq/copynet_mbert_distributed/test_results.json --include-package andushu
+CUDA_VISIBLE_DEVICES=1 bash docker_train.sh math2tree mathxling transformer_vocab_disallow_pow zh bert-base-multilingual-cased
 ```
