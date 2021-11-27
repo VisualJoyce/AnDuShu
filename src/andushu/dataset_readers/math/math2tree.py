@@ -19,7 +19,7 @@ from allennlp.data.tokenizers import (
 from overrides import overrides
 
 from andushu.dataset_readers.math.equation2tree import AstParser, equation2tree, parse_answer, eval_tree, update_tree, \
-    pformat_flat, isfloat, filtered_ops
+    pformat_flat, isfloat
 
 
 class Processor:
@@ -191,6 +191,96 @@ class Math2TreeDatasetReader(DatasetReader):
                 UserWarning,
             )
 
+    @overrides
+    def _read(self, file_path):
+        read_type = 'mixed'
+        if 'math23k' in file_path.lower():
+            read_type = 'math23k'
+        elif 'mathqa' in file_path.lower():
+            read_type = 'mathqa'
+
+        func = getattr(self, f'_read_{read_type}')
+        for item in self.shard_iterable(func(file_path)):
+            yield self.text_to_instance(item)
+
+    def _read_math23k(self, file_path):
+        with open(file_path, encoding="utf-8") as f:
+            for item in json.load(f):
+                process_type = item.get('process_type', 'mathqa')
+                func = getattr(Processor, f'process_{process_type}')
+                if process_type == 'math23k':
+                    item = func(self.ast_parser, item,
+                                use_chinese_segmentation=self._chinese_segmentation)
+                else:
+                    item = func(self.ast_parser, item, 'disallow_pow')
+                if item:
+                    yield item
+
+    def _read_mathqa(self, file_path, ops_type):
+        errors = []
+        total = 0
+        with jsonlines.open(file_path + f'.{ops_type}.jsonl', mode="w") as writer:
+            with open(file_path, encoding="utf-8") as f:
+                for item in json.load(f):
+                    total += 1
+                    process_type = item.get('process_type', 'mathqa')
+                    func = getattr(Processor, f'process_{process_type}')
+                    try:
+                        if process_type == 'math23k':
+                            item = func(self.ast_parser, item,
+                                        use_chinese_segmentation=self._chinese_segmentation)
+                        else:
+                            item = func(self.ast_parser, item, ops_type)
+                        status = 'ok' if item is not None else 'err'
+                    except SyntaxError:
+                        status = 'err'
+                    except ZeroDivisionError:
+                        status = 'err'
+                    except ValueError:
+                        status = 'err'
+                    except Exception as e:
+                        status = 'err'
+
+                    if status == 'ok':
+                        writer.write(item)
+                        yield item
+                    else:
+                        errors.append(item)
+        logger.info(f"Total instances: {total} \n"
+                    f"Error instances: {len(errors)} \n"
+                    f"Loaded instances: {total - len(errors)}")
+
+    def _read_mixed(self, file_path, op_type):
+        errors = []
+        total = 0
+        with open(file_path, encoding="utf-8") as f:
+            for item in json.load(f):
+                total += 1
+                func = getattr(Processor, f'process_{item["process_type"]}')
+                try:
+                    if item['process_type'] == 'math23k':
+                        item = func(self.ast_parser, item,
+                                    use_chinese_segmentation=self._chinese_segmentation)
+                    else:
+                        item = func(self.ast_parser, item, op_type)
+                    status = 'ok' if item is not None else 'err'
+                except SyntaxError:
+                    status = 'err'
+                except ZeroDivisionError:
+                    status = 'err'
+                except ValueError:
+                    status = 'err'
+                except Exception as e:
+                    status = 'err'
+
+                if status == 'ok':
+                    yield item
+                else:
+                    errors.append(item)
+        logger.info(f"Total instances: {total} \n"
+                    f"Error instances: {len(errors)} \n"
+                    f"Loaded instances: {total - len(errors)}")
+
     @staticmethod
     def _tokens_to_ids(tokens: List[Token]) -> List[int]:
         ids: Dict[str, int] = {}
@@ -270,128 +360,32 @@ class Math2TreeDatasetReader(DatasetReader):
 
 @DatasetReader.register("copynet_math2tree_math23k")
 class Math23KDatasetReader(Math2TreeDatasetReader):
-
-    @overrides
-    def _read(self, file_path):
-        for item in self.shard_iterable(self._read_math23k(file_path)):
-            yield self.text_to_instance(item)
-
-    def _read_math23k(self, file_path):
-        with open(file_path, encoding="utf-8") as f:
-            for item in json.load(f):
-                process_type = item.get('process_type', 'mathqa')
-                func = getattr(Processor, f'process_{process_type}')
-                if process_type == 'math23k':
-                    item = func(self.ast_parser, item,
-                                use_chinese_segmentation=self._chinese_segmentation)
-                else:
-                    item = func(self.ast_parser, item, 'disallow_pow')
-                if item:
-                    yield item
+    pass
 
 
 class MathQADatasetReader(Math2TreeDatasetReader):
-
-    def _read_mathqa(self, file_path, ops_type):
-        errors = []
-        total = 0
-        with jsonlines.open(file_path + f'.{ops_type}.jsonl', mode="w") as writer:
-            with open(file_path, encoding="utf-8") as f:
-                for item in json.load(f):
-                    total += 1
-                    process_type = item.get('process_type', 'mathqa')
-                    func = getattr(Processor, f'process_{process_type}')
-                    try:
-                        if process_type == 'math23k':
-                            item = func(self.ast_parser, item,
-                                        use_chinese_segmentation=self._chinese_segmentation)
-                        else:
-                            item = func(self.ast_parser, item, ops_type)
-                        status = 'ok' if item is not None else 'err'
-                    except SyntaxError:
-                        status = 'err'
-                    except ZeroDivisionError:
-                        status = 'err'
-                    except ValueError:
-                        status = 'err'
-                    except Exception as e:
-                        status = 'err'
-
-                    if status == 'ok':
-                        writer.write(item)
-                        yield item
-                    else:
-                        errors.append(item)
-        logger.info(f"Total instances: {total} \n"
-                    f"Error instances: {len(errors)} \n"
-                    f"Loaded instances: {total - len(errors)}")
+    pass
 
 
 @DatasetReader.register("copynet_math2tree_mathqa_allow_pow")
 class MathQAAllowPowDatasetReader(MathQADatasetReader):
-
-    @overrides
-    def _read(self, file_path):
-        for item in self.shard_iterable(self._read_mathqa(file_path, 'allow_pow')):
-            yield self.text_to_instance(item)
+    pass
 
 
 @DatasetReader.register("copynet_math2tree_mathqa_disallow_pow")
 class MathQADisallowPowDatasetReader(MathQADatasetReader):
-
-    @overrides
-    def _read(self, file_path):
-        for item in self.shard_iterable(self._read_mathqa(file_path, 'disallow_pow')):
-            yield self.text_to_instance(item)
+    pass
 
 
 class MathXLingDatasetReader(Math2TreeDatasetReader):
-
-    def _read_mixed(self, file_path, op_type):
-        errors = []
-        total = 0
-        with open(file_path, encoding="utf-8") as f:
-            for item in json.load(f):
-                total += 1
-                func = getattr(Processor, f'process_{item["process_type"]}')
-                try:
-                    if item['process_type'] == 'math23k':
-                        item = func(self.ast_parser, item,
-                                    use_chinese_segmentation=self._chinese_segmentation)
-                    else:
-                        item = func(self.ast_parser, item, op_type)
-                    status = 'ok' if item is not None else 'err'
-                except SyntaxError:
-                    status = 'err'
-                except ZeroDivisionError:
-                    status = 'err'
-                except ValueError:
-                    status = 'err'
-                except Exception as e:
-                    status = 'err'
-
-                if status == 'ok':
-                    yield item
-                else:
-                    errors.append(item)
-        logger.info(f"Total instances: {total} \n"
-                    f"Error instances: {len(errors)} \n"
-                    f"Loaded instances: {total - len(errors)}")
+    pass
 
 
 @DatasetReader.register("copynet_math2tree_mathxling_allow_pow")
 class MathXLingAllowPowDatasetReader(MathXLingDatasetReader):
-
-    @overrides
-    def _read(self, file_path):
-        for item in self.shard_iterable(self._read_mixed(file_path, 'allow_pow')):
-            yield self.text_to_instance(item)
+    pass
 
 
 @DatasetReader.register("copynet_math2tree_mathxling_disallow_pow")
 class MathXLingDisallowPowDatasetReader(MathXLingDatasetReader):
-
-    @overrides
-    def _read(self, file_path):
-        for item in self.shard_iterable(self._read_mixed(file_path, 'disallow_pow')):
-            yield self.text_to_instance(item)
+    pass
