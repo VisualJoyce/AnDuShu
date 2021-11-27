@@ -19,7 +19,7 @@ from allennlp.data.tokenizers import (
 from overrides import overrides
 
 from andushu.dataset_readers.math.equation2tree import AstParser, equation2tree, parse_answer, eval_tree, update_tree, \
-    pformat_flat, isfloat
+    pformat_flat, isfloat, filtered_ops
 
 
 class Processor:
@@ -206,13 +206,8 @@ class Math2TreeDatasetReader(DatasetReader):
     def _read_math23k(self, file_path):
         with open(file_path, encoding="utf-8") as f:
             for item in json.load(f):
-                process_type = item.get('process_type', 'mathqa')
-                func = getattr(Processor, f'process_{process_type}')
-                if process_type == 'math23k':
-                    item = func(self.ast_parser, item,
-                                use_chinese_segmentation=self._chinese_segmentation)
-                else:
-                    item = func(self.ast_parser, item, 'disallow_pow')
+                item = Processor.process_math23k(self.ast_parser, item,
+                                                 use_chinese_segmentation=self._chinese_segmentation)
                 if item:
                     yield item
 
@@ -223,14 +218,8 @@ class Math2TreeDatasetReader(DatasetReader):
             with open(file_path, encoding="utf-8") as f:
                 for item in json.load(f):
                     total += 1
-                    process_type = item.get('process_type', 'mathqa')
-                    func = getattr(Processor, f'process_{process_type}')
                     try:
-                        if process_type == 'math23k':
-                            item = func(self.ast_parser, item,
-                                        use_chinese_segmentation=self._chinese_segmentation)
-                        else:
-                            item = func(self.ast_parser, item, ops_type)
+                        item = Processor.process_mathqa(self.ast_parser, item, filtered_ops[ops_type])
                         status = 'ok' if item is not None else 'err'
                     except SyntaxError:
                         status = 'err'
@@ -262,7 +251,7 @@ class Math2TreeDatasetReader(DatasetReader):
                         item = func(self.ast_parser, item,
                                     use_chinese_segmentation=self._chinese_segmentation)
                     else:
-                        item = func(self.ast_parser, item, op_type)
+                        item = func(self.ast_parser, item, filtered_ops[op_type])
                     status = 'ok' if item is not None else 'err'
                 except SyntaxError:
                     status = 'err'
