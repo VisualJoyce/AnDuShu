@@ -191,19 +191,7 @@ class Math2TreeDatasetReader(DatasetReader):
                 UserWarning,
             )
 
-    @overrides
-    def _read(self, file_path):
-        read_type = 'mixed'
-        if 'math23k' in file_path.lower():
-            read_type = 'math23k'
-        elif 'mathqa' in file_path.lower():
-            read_type = 'mathqa'
-
-        func = getattr(self, f'_read_{read_type}')
-        for item in self.shard_iterable(func(file_path)):
-            yield self.text_to_instance(item)
-
-    def _read_math23k(self, file_path):
+    def _read_math23k(self, file_path, op_type=None):
         with open(file_path, encoding="utf-8") as f:
             for item in json.load(f):
                 item = Processor.process_math23k(self.ast_parser, item,
@@ -211,15 +199,15 @@ class Math2TreeDatasetReader(DatasetReader):
                 if item:
                     yield item
 
-    def _read_mathqa(self, file_path, ops_type):
+    def _read_mathqa(self, file_path, op_type):
         errors = []
         total = 0
-        with jsonlines.open(file_path + f'.{ops_type}.jsonl', mode="w") as writer:
+        with jsonlines.open(file_path + f'.{op_type}.jsonl', mode="w") as writer:
             with open(file_path, encoding="utf-8") as f:
                 for item in json.load(f):
                     total += 1
                     try:
-                        item = Processor.process_mathqa(self.ast_parser, item, filtered_ops[ops_type])
+                        item = Processor.process_mathqa(self.ast_parser, item, filtered_ops[op_type])
                         status = 'ok' if item is not None else 'err'
                     except SyntaxError:
                         status = 'err'
@@ -349,7 +337,18 @@ class Math2TreeDatasetReader(DatasetReader):
 
 @DatasetReader.register("copynet_math2tree_math23k")
 class Math23KDatasetReader(Math2TreeDatasetReader):
-    pass
+
+    @overrides
+    def _read(self, file_path):
+        read_type = 'mixed'
+        if 'math23k' in file_path.lower():
+            read_type = 'math23k'
+        elif 'mathqa' in file_path.lower():
+            read_type = 'mathqa'
+
+        func = getattr(self, f'_read_{read_type}')
+        for item in self.shard_iterable(func(file_path, op_type="disallow_pow")):
+            yield self.text_to_instance(item)
 
 
 class MathQADatasetReader(Math2TreeDatasetReader):
@@ -358,12 +357,34 @@ class MathQADatasetReader(Math2TreeDatasetReader):
 
 @DatasetReader.register("copynet_math2tree_mathqa_allow_pow")
 class MathQAAllowPowDatasetReader(MathQADatasetReader):
-    pass
+
+    @overrides
+    def _read(self, file_path):
+        read_type = 'mixed'
+        if 'math23k' in file_path.lower():
+            read_type = 'math23k'
+        elif 'mathqa' in file_path.lower():
+            read_type = 'mathqa'
+
+        func = getattr(self, f'_read_{read_type}')
+        for item in self.shard_iterable(func(file_path, op_type="allow_pow")):
+            yield self.text_to_instance(item)
 
 
 @DatasetReader.register("copynet_math2tree_mathqa_disallow_pow")
 class MathQADisallowPowDatasetReader(MathQADatasetReader):
-    pass
+
+    @overrides
+    def _read(self, file_path):
+        read_type = 'mixed'
+        if 'math23k' in file_path.lower():
+            read_type = 'math23k'
+        elif 'mathqa' in file_path.lower():
+            read_type = 'mathqa'
+
+        func = getattr(self, f'_read_{read_type}')
+        for item in self.shard_iterable(func(file_path, op_type="disallow_pow")):
+            yield self.text_to_instance(item)
 
 
 class MathXLingDatasetReader(Math2TreeDatasetReader):
@@ -372,9 +393,31 @@ class MathXLingDatasetReader(Math2TreeDatasetReader):
 
 @DatasetReader.register("copynet_math2tree_mathxling_allow_pow")
 class MathXLingAllowPowDatasetReader(MathXLingDatasetReader):
-    pass
+
+    @overrides
+    def _read(self, file_path):
+        read_type = 'mixed'
+        if 'math23k' in file_path.lower():
+            read_type = 'math23k'
+        elif 'mathqa' in file_path.lower():
+            read_type = 'mathqa'
+
+        func = getattr(self, f'_read_{read_type}')
+        for item in self.shard_iterable(func(file_path, op_type="allow_pow")):
+            yield self.text_to_instance(item)
 
 
 @DatasetReader.register("copynet_math2tree_mathxling_disallow_pow")
 class MathXLingDisallowPowDatasetReader(MathXLingDatasetReader):
-    pass
+
+    @overrides
+    def _read(self, file_path):
+        read_type = 'mixed'
+        if 'math23k' in file_path.lower():
+            read_type = 'math23k'
+        elif 'mathqa' in file_path.lower():
+            read_type = 'mathqa'
+
+        func = getattr(self, f'_read_{read_type}')
+        for item in self.shard_iterable(func(file_path, op_type="disallow_pow")):
+            yield self.text_to_instance(item)
