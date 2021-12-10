@@ -99,6 +99,7 @@ class Processor:
                 raise ValueError('Answer is not acceptable!')
 
 
+@DatasetReader.register("copynet_math2tree")
 class Math2TreeDatasetReader(DatasetReader):
     """
     Read a tsv file containing paired sequences, and create a dataset suitable for a
