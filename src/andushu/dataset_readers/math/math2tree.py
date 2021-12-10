@@ -56,6 +56,7 @@ class Processor:
                             tl.extend(list(w))
                     item['segmented_text'] = ' '.join(tl)
             item['problem'] = item['segmented_text']
+            item['process_type'] = 'math23k'
             return item
         except Exception as e:
             print(e, item)
@@ -92,6 +93,7 @@ class Processor:
                 item['ans'] = ans
                 item['problem'] = item['Problem']
                 item['equation'] = tree
+                item['process_type'] = 'mathqa'
                 return item
             else:
                 raise ValueError('Answer is not acceptable!')
@@ -163,6 +165,7 @@ class Math2TreeDatasetReader(DatasetReader):
 
     def __init__(
             self,
+            op_type: str,
             source_tokenizer: Tokenizer = None,
             target_tokenizer: Tokenizer = None,
             source_token_indexers: Dict[str, TokenIndexer] = None,
@@ -172,6 +175,7 @@ class Math2TreeDatasetReader(DatasetReader):
         super().__init__(
             manual_distributed_sharding=True, manual_multiprocess_sharding=True, **kwargs
         )
+        self.op_type = op_type
         self.ast_parser = AstParser()
         self._source_tokenizer = source_tokenizer or SpacyTokenizer()
         self._target_tokenizer = target_tokenizer or self._source_tokenizer
@@ -191,16 +195,38 @@ class Math2TreeDatasetReader(DatasetReader):
                 UserWarning,
             )
 
-    def _read_math23k(self, file_path, op_type=None):
-        with jsonlines.open(file_path + f'.jsonl', mode="w") as writer:
+    @overrides
+    def _read(self, file_path):
+        read_type = 'mixed'
+        if 'math23k' in file_path.lower():
+            read_type = 'math23k'
+        elif 'mathqa' in file_path.lower():
+            read_type = 'mathqa'
+
+        func = getattr(self, f'_read_{read_type}')
+        for item in self.shard_iterable(func(file_path, op_type=self.op_type)):
+            yield self.text_to_instance(item)
+
+    def _read_math23k(self, file_path, op_type):
+        errors = []
+        total = 0
+        with jsonlines.open(file_path + f'.{op_type}.jsonl', mode="w") as writer:
             with open(file_path, encoding="utf-8") as f:
                 for item in json.load(f):
+                    total += 1
                     item = Processor.process_math23k(self.ast_parser, item,
                                                      use_chinese_segmentation=self._chinese_segmentation)
                     if item:
-                        item['process_type'] = 'math23k'
+                        if op_type == "disallow_pow" and "Pow" in item['equation']:
+                            continue
+
                         writer.write(item)
                         yield item
+                    else:
+                        errors.append(item)
+        logger.info(f"Total instances: {total} \n"
+                    f"Error instances: {len(errors)} \n"
+                    f"Loaded instances: {total - len(errors)}")
 
     def _read_mathqa(self, file_path, op_type):
         errors = []
@@ -338,91 +364,3 @@ class Math2TreeDatasetReader(DatasetReader):
         instance.fields["source_tokens"]._token_indexers = self._source_token_indexers  # type: ignore
         if "target_tokens" in instance.fields:
             instance.fields["target_tokens"]._token_indexers = self._target_token_indexers  # type: ignore
-
-
-@DatasetReader.register("copynet_math2tree_math23k")
-class Math23KDatasetReader(Math2TreeDatasetReader):
-
-    @overrides
-    def _read(self, file_path):
-        read_type = 'mixed'
-        if 'math23k' in file_path.lower():
-            read_type = 'math23k'
-        elif 'mathqa' in file_path.lower():
-            read_type = 'mathqa'
-
-        func = getattr(self, f'_read_{read_type}')
-        for item in self.shard_iterable(func(file_path, op_type="disallow_pow")):
-            yield self.text_to_instance(item)
-
-
-class MathQADatasetReader(Math2TreeDatasetReader):
-    pass
-
-
-@DatasetReader.register("copynet_math2tree_mathqa_allow_pow")
-class MathQAAllowPowDatasetReader(MathQADatasetReader):
-
-    @overrides
-    def _read(self, file_path):
-        read_type = 'mixed'
-        if 'math23k' in file_path.lower():
-            read_type = 'math23k'
-        elif 'mathqa' in file_path.lower():
-            read_type = 'mathqa'
-
-        func = getattr(self, f'_read_{read_type}')
-        for item in self.shard_iterable(func(file_path, op_type="allow_pow")):
-            yield self.text_to_instance(item)
-
-
-@DatasetReader.register("copynet_math2tree_mathqa_disallow_pow")
-class MathQADisallowPowDatasetReader(MathQADatasetReader):
-
-    @overrides
-    def _read(self, file_path):
-        read_type = 'mixed'
-        if 'math23k' in file_path.lower():
-            read_type = 'math23k'
-        elif 'mathqa' in file_path.lower():
-            read_type = 'mathqa'
-
-        func = getattr(self, f'_read_{read_type}')
-        for item in self.shard_iterable(func(file_path, op_type="disallow_pow")):
-            yield self.text_to_instance(item)
-
-
-class MathXLingDatasetReader(Math2TreeDatasetReader):
-    pass
-
-
-@DatasetReader.register("copynet_math2tree_mathxling_allow_pow")
-class MathXLingAllowPowDatasetReader(MathXLingDatasetReader):
-
-    @overrides
-    def _read(self, file_path):
-        read_type = 'mixed'
-        if 'math23k' in file_path.lower():
-            read_type = 'math23k'
-        elif 'mathqa' in file_path.lower():
-            read_type = 'mathqa'
-
-        func = getattr(self, f'_read_{read_type}')
-        for item in self.shard_iterable(func(file_path, op_type="allow_pow")):
-            yield self.text_to_instance(item)
-
-
-@DatasetReader.register("copynet_math2tree_mathxling_disallow_pow")
-class MathXLingDisallowPowDatasetReader(MathXLingDatasetReader):
-
-    @overrides
-    def _read(self, file_path):
-        read_type = 'mixed'
-        if 'math23k' in file_path.lower():
-            read_type = 'math23k'
-        elif 'mathqa' in file_path.lower():
-            read_type = 'mathqa'
-
-        func = getattr(self, f'_read_{read_type}')
-        for item in self.shard_iterable(func(file_path, op_type="disallow_pow")):
-            yield self.text_to_instance(item)

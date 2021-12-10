@@ -8,6 +8,7 @@ local MODEL_NAME = std.extVar("MODEL_NAME");
 local CUDA_DEVICES = std.map(std.parseInt, std.split(std.extVar("CUDA_VISIBLE_DEVICES"), ","));
 local POS_TAGS = stringToBool(std.extVar("POS_TAGS"));
 local LANGUAGE = std.extVar("LANGUAGE");
+local OP_TYPE = std.extVar("OP_TYPE");
 
 {
   "vocabulary": {
@@ -15,15 +16,16 @@ local LANGUAGE = std.extVar("LANGUAGE");
     "directory": dataset_path + "MathVocabulary",
   },
   "dataset_reader": {
-    "type": "copynet_math2tree_mathqa_disallow_pow",
+    "type": "copynet_math2tree",
+    "op_type": OP_TYPE,
     'source_tokenizer': {
       "type": "spacy",
       "pos_tags": POS_TAGS,
       "language": LANGUAGE + "_core_web_sm"
     },
     'target_tokenizer': {
+      "type": "spacy",
       "pos_tags": POS_TAGS,
-      "type": "spacy"
     },
     "source_token_indexers": {
       "bert": {
@@ -39,8 +41,8 @@ local LANGUAGE = std.extVar("LANGUAGE");
       }
     },
   },
-  "train_data_path": dataset_path + "MathQA/train.json",
-  "validation_data_path": dataset_path + "MathQA/dev.json",
+  "train_data_path": dataset_path + "Math23K/train.json." + OP_TYPE + ".jsonl;" + dataset_path + "MathQA/train.json." + OP_TYPE + ".jsonl",
+  "validation_data_path": dataset_path + "Math23K/dev.json." + OP_TYPE + ".jsonl;" + dataset_path + "MathQA/dev.json" + OP_TYPE + ".jsonl",
   "model": {
     "type": "copynet_seq2seq",
     "source_text_embedder": {
@@ -73,7 +75,6 @@ local LANGUAGE = std.extVar("LANGUAGE");
     "token_based_metric": "equation_answer_accuracy"
   },
   "data_loader": {
-    "num_workers": 8,
     "batch_sampler": {
       "type": "bucket",
       "padding_noise": 0.0,

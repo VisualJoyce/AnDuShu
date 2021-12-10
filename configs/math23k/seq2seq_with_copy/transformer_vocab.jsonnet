@@ -8,6 +8,7 @@ local MODEL_NAME = std.extVar("MODEL_NAME");
 local CUDA_DEVICES = std.map(std.parseInt, std.split(std.extVar("CUDA_VISIBLE_DEVICES"), ","));
 local POS_TAGS = stringToBool(std.extVar("POS_TAGS"));
 local LANGUAGE = std.extVar("LANGUAGE");
+local OP_TYPE = std.extVar("OP_TYPE");
 
 {
   "vocabulary": {
@@ -15,7 +16,8 @@ local LANGUAGE = std.extVar("LANGUAGE");
     "directory": dataset_path + "MathVocabulary",
   },
   "dataset_reader": {
-    "type": "copynet_math2tree_math23k",
+    "type": "copynet_math2tree",
+    "op_type": OP_TYPE,
     'source_tokenizer': {
       "type": "spacy",
       "pos_tags": POS_TAGS,
