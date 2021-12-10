@@ -12,5 +12,5 @@ CONFIG_DIR=$(readlink -f "${WORK_DIR}"/configs)
 CUDA_VISIBLE_DEVICES=0,1 PYTHONPATH=src ANNOTATION_DIR=${DATA_DIR}/annotations/ \
   MODEL_NAME=${MODEL_NAME} TOKENIZERS_PARALLELISM=false POS_TAGS=false LANGUAGE="${SPACY_LANGUAGE}" OP_TYPE=${OP_TYPE} \
   allennlp train "${CONFIG_DIR}"/"${PROJECT}"/seq2seq_with_copy/"${CONFIG}".jsonnet \
-  -s data/output/"${PROJECT}"/"${CONFIG}"_"${SPACY_LANGUAGE}" \
+  -s data/output/"${PROJECT}"/"${CONFIG}"_"${SPACY_LANGUAGE}"_"${OP_TYPE}" \
   --include-package andushu

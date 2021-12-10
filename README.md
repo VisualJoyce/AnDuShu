@@ -71,7 +71,7 @@ Annotations used for this paper can be found at [annotations](https://drive.goog
 
 Training Math23K using `bert-base-multilingual-cased`.
 ```shell
-CUDA_VISIBLE_DEVICES=1 bash docker_train.sh math2tree math23k transformer_vocab zh bert-base-multilingual-cased
+CUDA_VISIBLE_DEVICES=2 PROJECT=math2tree SUB_PROJECT=math23k CONFIG=transformer_vocab SPACY_LANGUAGE=zh MODEL_NAME=bert-base-multilingual-cased OP_TYPE=disallow_pow bash docker_train.sh
 ```
 
 Training over MathQA-Adapted without `Pow`.
