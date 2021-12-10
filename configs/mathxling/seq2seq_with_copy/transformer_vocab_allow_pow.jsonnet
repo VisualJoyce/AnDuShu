@@ -39,8 +39,8 @@ local LANGUAGE = std.extVar("LANGUAGE");
       }
     },
   },
-  "train_data_path": dataset_path + "MathXLing/train.json",
-  "validation_data_path": dataset_path + "MathXLing/dev.json",
+  "train_data_path": dataset_path + "Math23K/train.json.jsonl;" + dataset_path + "MathQA/train.json.allow_pow.jsonl",
+  "validation_data_path": dataset_path + "Math23K/dev.json.jsonl;" + dataset_path + "MathQA/dev.json.allow_pow.jsonl",
   "model": {
     "type": "copynet_seq2seq",
     "source_text_embedder": {

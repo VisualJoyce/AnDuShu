@@ -192,12 +192,15 @@ class Math2TreeDatasetReader(DatasetReader):
             )
 
     def _read_math23k(self, file_path, op_type=None):
-        with open(file_path, encoding="utf-8") as f:
-            for item in json.load(f):
-                item = Processor.process_math23k(self.ast_parser, item,
-                                                 use_chinese_segmentation=self._chinese_segmentation)
-                if item:
-                    yield item
+        with jsonlines.open(file_path + f'.jsonl', mode="w") as writer:
+            with open(file_path, encoding="utf-8") as f:
+                for item in json.load(f):
+                    item = Processor.process_math23k(self.ast_parser, item,
+                                                     use_chinese_segmentation=self._chinese_segmentation)
+                    if item:
+                        item['process_type'] = 'math23k'
+                        writer.write(item)
+                        yield item
 
     def _read_mathqa(self, file_path, op_type):
         errors = []
@@ -219,6 +222,7 @@ class Math2TreeDatasetReader(DatasetReader):
                         status = 'err'
 
                     if status == 'ok':
+                        item['process_type'] = 'mathqa'
                         writer.write(item)
                         yield item
                     else:
@@ -228,32 +232,33 @@ class Math2TreeDatasetReader(DatasetReader):
                     f"Loaded instances: {total - len(errors)}")
 
     def _read_mixed(self, file_path, op_type):
-        errors = []
         total = 0
-        with open(file_path, encoding="utf-8") as f:
-            for item in json.load(f):
-                total += 1
-                func = getattr(Processor, f'process_{item["process_type"]}')
-                try:
-                    if item['process_type'] == 'math23k':
-                        item = func(self.ast_parser, item,
-                                    use_chinese_segmentation=self._chinese_segmentation)
-                    else:
-                        item = func(self.ast_parser, item, filtered_ops[op_type])
-                    status = 'ok' if item is not None else 'err'
-                except SyntaxError:
-                    status = 'err'
-                except ZeroDivisionError:
-                    status = 'err'
-                except ValueError:
-                    status = 'err'
-                except Exception as e:
-                    status = 'err'
+        errors = []
+        for fp in file_path.split(";"):
+            with jsonlines.open(fp) as reader:
+                for item in reader:
+                    total += 1
+                    func = getattr(Processor, f'process_{item["process_type"]}')
+                    try:
+                        if item['process_type'] == 'math23k':
+                            item = func(self.ast_parser, item,
+                                        use_chinese_segmentation=self._chinese_segmentation)
+                        else:
+                            item = func(self.ast_parser, item, filtered_ops[op_type])
+                        status = 'ok' if item is not None else 'err'
+                    except SyntaxError:
+                        status = 'err'
+                    except ZeroDivisionError:
+                        status = 'err'
+                    except ValueError:
+                        status = 'err'
+                    except Exception as e:
+                        status = 'err'
 
-                if status == 'ok':
-                    yield item
-                else:
-                    errors.append(item)
+                    if status == 'ok':
+                        yield item
+                    else:
+                        errors.append(item)
         logger.info(f"Total instances: {total} \n"
                     f"Error instances: {len(errors)} \n"
                     f"Loaded instances: {total - len(errors)}")
