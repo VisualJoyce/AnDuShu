@@ -76,15 +76,20 @@ CUDA_VISIBLE_DEVICES=2 PROJECT=math2tree SUB_PROJECT=math23k CONFIG=transformer_
 
 Training over MathQA-Adapted without `Pow`.
 ```shell
-CUDA_VISIBLE_DEVICES=1 bash docker_train.sh math2tree mathqa transformer_vocab_disallow_pow en bert-base-multilingual-cased
+CUDA_VISIBLE_DEVICES=2 PROJECT=math2tree SUB_PROJECT=mathqa CONFIG=transformer_vocab SPACY_LANGUAGE=zh MODEL_NAME=bert-base-multilingual-cased OP_TYPE=disallow_pow bash docker_train.sh
 ```
 
 Training over MathQA-Adapted with `Pow`.
 ```shell
-CUDA_VISIBLE_DEVICES=1 bash docker_train.sh math2tree mathqa transformer_vocab_allow_pow en bert-base-multilingual-cased
+CUDA_VISIBLE_DEVICES=2 PROJECT=math2tree SUB_PROJECT=mathqa CONFIG=transformer_vocab SPACY_LANGUAGE=zh MODEL_NAME=bert-base-multilingual-cased OP_TYPE=allow_pow bash docker_train.sh
 ```
 
 Training over MathXLing without `Pow`.
 ```shell
-CUDA_VISIBLE_DEVICES=1 bash docker_train.sh math2tree mathxling transformer_vocab_disallow_pow zh bert-base-multilingual-cased
+ CUDA_VISIBLE_DEVICES=2 PROJECT=math2tree SUB_PROJECT=mathxling CONFIG=transformer_vocab SPACY_LANGUAGE=zh MODEL_NAME=bert-base-multilingual-cased OP_TYPE=disallow_pow bash docker_train.sh
+```
+
+Training over MathXLing with `Pow`.
+```shell
+ CUDA_VISIBLE_DEVICES=2 PROJECT=math2tree SUB_PROJECT=mathxling CONFIG=transformer_vocab SPACY_LANGUAGE=zh MODEL_NAME=bert-base-multilingual-cased OP_TYPE=allow_pow bash docker_train.sh
 ```
