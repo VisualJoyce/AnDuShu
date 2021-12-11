@@ -17,6 +17,7 @@ local OP_TYPE = std.extVar("OP_TYPE");
   },
   "dataset_reader": {
     "type": "copynet_math2tree",
+    "read_type": "mathxling",
     "op_type": OP_TYPE,
     'source_tokenizer': {
       "type": "spacy",

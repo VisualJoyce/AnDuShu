@@ -166,6 +166,7 @@ class Math2TreeDatasetReader(DatasetReader):
 
     def __init__(
             self,
+            read_type: str,
             op_type: str,
             source_tokenizer: Tokenizer = None,
             target_tokenizer: Tokenizer = None,
@@ -176,6 +177,8 @@ class Math2TreeDatasetReader(DatasetReader):
         super().__init__(
             manual_distributed_sharding=True, manual_multiprocess_sharding=True, **kwargs
         )
+        assert read_type in ['math23k', 'mathqa', 'mathxling']
+        self.read_type = read_type
         self.op_type = op_type
         self.ast_parser = AstParser()
         self._source_tokenizer = source_tokenizer or SpacyTokenizer()
@@ -198,13 +201,7 @@ class Math2TreeDatasetReader(DatasetReader):
 
     @overrides
     def _read(self, file_path):
-        read_type = 'mathxling'
-        if 'math23k' in file_path.lower():
-            read_type = 'math23k'
-        elif 'mathqa' in file_path.lower():
-            read_type = 'mathqa'
-
-        func = getattr(self, f'_read_{read_type}')
+        func = getattr(self, f'_read_{self.read_type}')
         for item in self.shard_iterable(func(file_path, op_type=self.op_type)):
             yield self.text_to_instance(item)
 
