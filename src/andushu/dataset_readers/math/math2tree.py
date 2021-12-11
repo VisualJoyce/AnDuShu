@@ -262,27 +262,7 @@ class Math2TreeDatasetReader(DatasetReader):
             with jsonlines.open(fp) as reader:
                 for item in reader:
                     total += 1
-                    func = getattr(Processor, f'process_{item["process_type"]}')
-                    try:
-                        if item['process_type'] == 'math23k':
-                            item = func(self.ast_parser, item,
-                                        use_chinese_segmentation=self._chinese_segmentation)
-                        else:
-                            item = func(self.ast_parser, item, filtered_ops[op_type])
-                        status = 'ok' if item is not None else 'err'
-                    except SyntaxError:
-                        status = 'err'
-                    except ZeroDivisionError:
-                        status = 'err'
-                    except ValueError:
-                        status = 'err'
-                    except Exception as e:
-                        status = 'err'
-
-                    if status == 'ok':
-                        yield item
-                    else:
-                        errors.append(item)
+                    yield item
         logger.info(f"Total instances: {total} \n"
                     f"Error instances: {len(errors)} \n"
                     f"Loaded instances: {total - len(errors)}")
