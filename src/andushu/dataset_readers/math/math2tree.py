@@ -198,7 +198,7 @@ class Math2TreeDatasetReader(DatasetReader):
 
     @overrides
     def _read(self, file_path):
-        read_type = 'mixed'
+        read_type = 'mathxling'
         if 'math23k' in file_path.lower():
             read_type = 'math23k'
         elif 'mathqa' in file_path.lower():
@@ -258,7 +258,7 @@ class Math2TreeDatasetReader(DatasetReader):
                     f"Error instances: {len(errors)} \n"
                     f"Loaded instances: {total - len(errors)}")
 
-    def _read_mixed(self, file_path, op_type):
+    def _read_xling(self, file_path, op_type):
         total = 0
         errors = []
         for fp in file_path.split(";"):
