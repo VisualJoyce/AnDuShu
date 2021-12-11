@@ -255,7 +255,7 @@ class Math2TreeDatasetReader(DatasetReader):
                     f"Error instances: {len(errors)} \n"
                     f"Loaded instances: {total - len(errors)}")
 
-    def _read_xling(self, file_path, op_type):
+    def _read_mathxling(self, file_path, op_type):
         total = 0
         errors = []
         for fp in file_path.split(";"):
