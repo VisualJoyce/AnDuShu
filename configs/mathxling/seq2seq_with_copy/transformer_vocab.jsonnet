@@ -43,7 +43,7 @@ local OP_TYPE = std.extVar("OP_TYPE");
     },
   },
   "train_data_path": dataset_path + "Math23K/train.json." + OP_TYPE + ".jsonl;" + dataset_path + "MathQA/train.json." + OP_TYPE + ".jsonl",
-  "validation_data_path": dataset_path + "Math23K/dev.json." + OP_TYPE + ".jsonl;" + dataset_path + "MathQA/dev.json" + OP_TYPE + ".jsonl",
+  "validation_data_path": dataset_path + "Math23K/dev.json." + OP_TYPE + ".jsonl;" + dataset_path + "MathQA/dev.json." + OP_TYPE + ".jsonl",
   "model": {
     "type": "copynet_seq2seq",
     "source_text_embedder": {
