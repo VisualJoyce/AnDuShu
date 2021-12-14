@@ -79,7 +79,7 @@ local OP_TYPE = std.extVar("OP_TYPE");
     "batch_sampler": {
       "type": "bucket",
       "padding_noise": 0.0,
-      "batch_size": 20
+      "batch_size": if MODEL_NAME == 'xlm-roberta-base' then 16 else 20
     }
   },
   "validation_data_loader": {
