@@ -211,7 +211,7 @@ class Math2TreeDatasetReader(DatasetReader):
             with open(file_path, encoding="utf-8") as f:
                 for item in json.load(f):
                     try:
-                        if item['process_type'] == 'mathqa':
+                        if item.get('process_type') == 'mathqa' or "annotated_formula" in item:
                             item = Processor.process_mathqa(self.ast_parser, item, filtered_ops[op_type])
                             status = 'ok' if item is not None else 'err'
                         else:
@@ -252,9 +252,9 @@ class Math2TreeDatasetReader(DatasetReader):
                     yield item
                 else:
                     errors.append(item)
-        logger.info(f"Total instances: {total} \n"
-                    f"Error instances: {len(errors)} \n"
-                    f"Loaded instances: {total - len(errors)}")
+        logger.info(f"Total instances: {total}")
+        logger.info(f"Error instances: {len(errors)}")
+        logger.info(f"Loaded instances: {total - len(errors)}")
 
     def _read_math23k(self, file_path, op_type):
         return iter(self._read_data(file_path, op_type))
