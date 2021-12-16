@@ -240,7 +240,7 @@ class Math2TreeDatasetReader(DatasetReader):
         errors = []
         total = 0
         filename = file_path + f'.{op_type}.jsonl'
-        if os.path.isfile(filename):
+        if os.path.isfile(filename) and os.path.getsize(filename) > 0:
             with jsonlines.open(filename) as reader:
                 for item in reader:
                     total += 1
