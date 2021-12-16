@@ -257,10 +257,10 @@ class Math2TreeDatasetReader(DatasetReader):
                     f"Loaded instances: {total - len(errors)}")
 
     def _read_math23k(self, file_path, op_type):
-        self._read_data(file_path, op_type)
+        return iter(self._read_data(file_path, op_type))
 
     def _read_mathqa(self, file_path, op_type):
-        self._read_data(file_path, op_type)
+        return iter(self._read_data(file_path, op_type))
 
     def _read_mathxling(self, file_path, op_type):
         total = 0
