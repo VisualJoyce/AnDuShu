@@ -15,4 +15,4 @@ docker run --gpus '"'device="$CUDA_VISIBLE_DEVICES"'"' --ipc=host --rm -it \
   --mount src="$NLTK_DATA",dst=/root/nltk_data,type=bind \
   -e NVIDIA_VISIBLE_DEVICES="$CUDA_VISIBLE_DEVICES" \
   -w /src visualjoyce/andushu:latest \
-  bash -c "PROJECT=${SUB_PROJECT} CONFIG=${CONFIG} SPACY_LANGUAGE=${SPACY_LANGUAGE} MODEL_NAME=${MODEL_NAME} OP_TYPE=$OP_TYPE bash train_${PROJECT}.sh "
+  bash -c "PROJECT=${SUB_PROJECT} CONFIG=${CONFIG} SPACY_LANGUAGE=${SPACY_LANGUAGE} MODEL_NAME=${MODEL_NAME} OP_TYPE=$OP_TYPE bash ${PROJECT}_train.sh "

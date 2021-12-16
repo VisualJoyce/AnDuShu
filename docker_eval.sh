@@ -19,4 +19,4 @@ docker run --gpus '"'device="$CUDA_VISIBLE_DEVICES"'"' --ipc=host --rm -it \
   --mount src="$NLTK_DATA",dst=/root/nltk_data,type=bind \
   -e NVIDIA_VISIBLE_DEVICES="$CUDA_VISIBLE_DEVICES" \
   -w /src visualjoyce/andushu:latest \
-  bash -c "bash ${RUN_TYPE}_${PROJECT}.sh ${MODEL_DIR}"
+  bash -c "bash ${PROJECT}_${RUN_TYPE}.sh ${MODEL_DIR}"
