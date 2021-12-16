@@ -13,6 +13,9 @@ for d in "${datasets[@]}"
 do
   for s in "${splits[@]}"
   do
+    echo "*************************************************************************************************************"
+    echo "                                               Evaluating $d $s                                              "
+    echo "*************************************************************************************************************"
     PYTHONPATH=src \
     allennlp evaluate "${MODEL_DIR}"/model.tar.gz \
     data/annotations/"$d"/"$s".json \
@@ -27,6 +30,9 @@ for e in "${evals[@]}"
 do
   for l in "${langs[@]}"
   do
+    echo "*************************************************************************************************************"
+    echo "                                               Evaluating $e $l                                              "
+    echo "*************************************************************************************************************"
     PYTHONPATH=src \
     allennlp evaluate "${MODEL_DIR}"/model.tar.gz \
     data/annotations/MathXLing/"$e"_"$l".json \
