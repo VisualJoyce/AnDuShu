@@ -206,70 +206,61 @@ class Math2TreeDatasetReader(DatasetReader):
         for item in self.shard_iterable(func(file_path, op_type=self.op_type)):
             yield self.text_to_instance(item)
 
-    def _read_math23k(self, file_path, op_type):
-        errors = []
-        total = 0
-        filename = file_path + f'.{op_type}.jsonl'
-        if os.path.isfile(filename):
-            with jsonlines.open(filename) as reader:
-                for item in reader:
-                    total += 1
-                    yield item
-        else:
-            with jsonlines.open(file_path + f'.{op_type}.jsonl', mode="w") as writer:
-                with open(file_path, encoding="utf-8") as f:
-                    for item in json.load(f):
-                        total += 1
-                        item = Processor.process_math23k(self.ast_parser, item,
-                                                         use_chinese_segmentation=self._chinese_segmentation)
-                        if item:
-                            if op_type == "disallow_pow" and "Pow" in item['equation']:
-                                continue
-
-                            writer.write(item)
-                            yield item
-                        else:
-                            errors.append(item)
-        logger.info(f"Total instances: {total} \n"
-                    f"Error instances: {len(errors)} \n"
-                    f"Loaded instances: {total - len(errors)}")
-
-    def _read_mathqa(self, file_path, op_type):
-        errors = []
-        total = 0
-
-        filename = file_path + f'.{op_type}.jsonl'
-        if os.path.isfile(filename):
-            with jsonlines.open(filename) as reader:
-                for item in reader:
-                    total += 1
-                    yield item
-        else:
-            with jsonlines.open(filename, mode="w") as writer:
-                with open(file_path, encoding="utf-8") as f:
-                    for item in json.load(f):
-                        total += 1
-                        try:
+    def _read_and_dump(self, filename, file_path, op_type):
+        with jsonlines.open(filename, mode="w") as writer:
+            with open(file_path, encoding="utf-8") as f:
+                for item in json.load(f):
+                    try:
+                        if item['process_type'] == 'mathqa':
                             item = Processor.process_mathqa(self.ast_parser, item, filtered_ops[op_type])
                             status = 'ok' if item is not None else 'err'
-                        except SyntaxError:
-                            status = 'err'
-                        except ZeroDivisionError:
-                            status = 'err'
-                        except ValueError:
-                            status = 'err'
-                        except Exception as e:
-                            status = 'err'
-
-                        if status == 'ok':
-                            item['process_type'] = 'mathqa'
-                            writer.write(item)
-                            yield item
                         else:
-                            errors.append(item)
+                            item = Processor.process_math23k(self.ast_parser, item,
+                                                             use_chinese_segmentation=self._chinese_segmentation)
+                            if op_type == "disallow_pow" and item and "Pow" in item['equation']:
+                                status = 'err'
+                            else:
+                                status = 'ok' if item is not None else 'err'
+                    except SyntaxError:
+                        status = 'err'
+                    except ZeroDivisionError:
+                        status = 'err'
+                    except ValueError:
+                        status = 'err'
+                    except Exception as e:
+                        status = 'err'
+
+                    if status == 'ok':
+                        item['process_type'] = 'mathqa'
+                        writer.write(item)
+
+                    yield status, item
+
+    def _read_data(self, file_path, op_type):
+        errors = []
+        total = 0
+        filename = file_path + f'.{op_type}.jsonl'
+        if os.path.isfile(filename):
+            with jsonlines.open(filename) as reader:
+                for item in reader:
+                    total += 1
+                    yield item
+        else:
+            for status, item in self._read_and_dump(filename, file_path, op_type):
+                total += 1
+                if status == 'ok':
+                    yield item
+                else:
+                    errors.append(item)
         logger.info(f"Total instances: {total} \n"
                     f"Error instances: {len(errors)} \n"
                     f"Loaded instances: {total - len(errors)}")
+
+    def _read_math23k(self, file_path, op_type):
+        self._read_data(file_path, op_type)
+
+    def _read_mathqa(self, file_path, op_type):
+        self._read_data(file_path, op_type)
 
     def _read_mathxling(self, file_path, op_type):
         total = 0
