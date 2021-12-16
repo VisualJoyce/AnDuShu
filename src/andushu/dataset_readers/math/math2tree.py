@@ -266,10 +266,9 @@ class Math2TreeDatasetReader(DatasetReader):
         total = 0
         errors = []
         for fp in file_path.split(";"):
-            with jsonlines.open(fp) as reader:
-                for item in reader:
-                    total += 1
-                    yield item
+            for item in iter(self._read_data(fp, op_type)):
+                total += 1
+                yield item
         logger.info(f"Total instances: {total} \n"
                     f"Error instances: {len(errors)} \n"
                     f"Loaded instances: {total - len(errors)}")
