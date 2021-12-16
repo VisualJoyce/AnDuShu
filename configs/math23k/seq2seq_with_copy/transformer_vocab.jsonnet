@@ -9,6 +9,8 @@ local CUDA_DEVICES = std.map(std.parseInt, std.split(std.extVar("CUDA_VISIBLE_DE
 local POS_TAGS = stringToBool(std.extVar("POS_TAGS"));
 local LANGUAGE = std.extVar("LANGUAGE");
 local OP_TYPE = std.extVar("OP_TYPE");
+local BATCH_SIZE = if MODEL_NAME == 'xlm-roberta-base' then 10 else 20;
+local NUM_GRADIENT_ACCUMULATION_STEPS = if MODEL_NAME == 'xlm-roberta-base' then std.ceil(16 / std.length(CUDA_DEVICES)) else std.ceil(8 / std.length(CUDA_DEVICES));
 
 {
   "vocabulary": {
@@ -93,7 +95,7 @@ local OP_TYPE = std.extVar("OP_TYPE");
     "batch_sampler": {
       "type": "bucket",
       "padding_noise": 0.0,
-      "batch_size": 30
+      "batch_size": BATCH_SIZE
     }
   },
   "validation_data_loader": {
@@ -117,7 +119,7 @@ local OP_TYPE = std.extVar("OP_TYPE");
     "grad_norm": 1.0,
     "num_epochs": 150,
     "patience" : 30,
-    "num_gradient_accumulation_steps": std.ceil(8 / std.length(CUDA_DEVICES)),
+    "num_gradient_accumulation_steps": NUM_GRADIENT_ACCUMULATION_STEPS,
     "cuda_device": 0,
     "validation_metric": "+answer_acc"
   }
