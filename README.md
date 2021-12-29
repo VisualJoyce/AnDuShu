@@ -67,7 +67,11 @@ This repo includes the code for
 }
 ```
 
-Annotations used for this paper can be found at [annotations](https://drive.google.com/drive/folders/1l6o1nE4qNS8gfjKK6Q8edQq4w4I53uIR?usp=sharing).
+Annotations used for this paper can be found at 
+* BaiduNetDisk 链接：https://pan.baidu.com/s/1RfvHqa0iwP2u2mHYKV8Hsw 提取码：4w71 
+
+![A028B87640DB07606C9D1431289C6F00](https://user-images.githubusercontent.com/2136700/147673791-86396ab4-e572-4b67-9ec3-31de884695db.png)
+* [GoogleDrive](https://drive.google.com/drive/folders/1l6o1nE4qNS8gfjKK6Q8edQq4w4I53uIR?usp=sharing).
 
 Training Math23K using `bert-base-multilingual-cased`.
 ```shell
