@@ -239,7 +239,11 @@ class Math2TreeDatasetReader(DatasetReader):
     def _read_data(self, file_path, op_type):
         errors = []
         total = 0
-        filename = file_path + f'.{op_type}.jsonl'
+        if file_path.endswith(f'.{op_type}.jsonl'):
+            filename = file_path
+        else:
+            filename = file_path + f'.{op_type}.jsonl'
+
         if os.path.isfile(filename) and os.path.getsize(filename) > 0:
             with jsonlines.open(filename) as reader:
                 for item in reader:
