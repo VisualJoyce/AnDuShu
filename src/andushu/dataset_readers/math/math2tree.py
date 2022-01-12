@@ -203,10 +203,11 @@ class Math2TreeDatasetReader(DatasetReader):
     @overrides
     def _read(self, file_path):
         func = getattr(self, f'_read_{self.read_type}')
-        for item in self.shard_iterable(func(file_path, op_type=self.op_type)):
+        for item in self.shard_iterable(func(file_path)):
             yield self.text_to_instance(item)
 
-    def _read_and_dump(self, filename, file_path, op_type):
+    def _read_and_dump(self, filename, file_path):
+        op_type = self.op_type
         with jsonlines.open(filename, mode="w") as writer:
             with open(file_path, encoding="utf-8") as f:
                 for item in json.load(f):
@@ -231,14 +232,14 @@ class Math2TreeDatasetReader(DatasetReader):
                         status = 'err'
 
                     if status == 'ok':
-                        item['process_type'] = 'mathqa'
                         writer.write(item)
 
                     yield status, item
 
-    def _read_data(self, file_path, op_type):
+    def _read_data(self, file_path):
         errors = []
         total = 0
+        op_type = self.op_type
         if file_path.endswith(f'.{op_type}.jsonl'):
             filename = file_path
         else:
@@ -250,7 +251,7 @@ class Math2TreeDatasetReader(DatasetReader):
                     total += 1
                     yield item
         else:
-            for status, item in self._read_and_dump(filename, file_path, op_type):
+            for status, item in self._read_and_dump(filename, file_path):
                 total += 1
                 if status == 'ok':
                     yield item
@@ -260,17 +261,17 @@ class Math2TreeDatasetReader(DatasetReader):
         logger.info(f"Error instances: {len(errors)}")
         logger.info(f"Loaded instances: {total - len(errors)}")
 
-    def _read_math23k(self, file_path, op_type):
-        return iter(self._read_data(file_path, op_type))
+    def _read_math23k(self, file_path):
+        return iter(self._read_data(file_path))
 
-    def _read_mathqa(self, file_path, op_type):
-        return iter(self._read_data(file_path, op_type))
+    def _read_mathqa(self, file_path):
+        return iter(self._read_data(file_path))
 
-    def _read_mathxling(self, file_path, op_type):
+    def _read_mathxling(self, file_path):
         total = 0
         errors = []
         for fp in file_path.split(";"):
-            for item in iter(self._read_data(fp, op_type)):
+            for item in iter(self._read_data(fp)):
                 total += 1
                 yield item
         logger.info(f"Total instances: {total} \n"
