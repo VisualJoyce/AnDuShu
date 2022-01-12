@@ -246,11 +246,13 @@ class Math2TreeDatasetReader(DatasetReader):
             filename = file_path + f'.{op_type}.jsonl'
 
         if os.path.isfile(filename) and os.path.getsize(filename) > 0:
+            logger.info(f"Loading from file: {filename}")
             with jsonlines.open(filename) as reader:
                 for item in reader:
                     total += 1
                     yield item
         else:
+            logger.info(f"Dumping to file: {filename}")
             for status, item in self._read_and_dump(filename, file_path):
                 total += 1
                 if status == 'ok':
