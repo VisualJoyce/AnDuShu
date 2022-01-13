@@ -26,38 +26,17 @@ from andushu.dataset_readers.math.equation2tree import AstParser, equation2tree,
 class Processor:
 
     @classmethod
-    def process_math23k(cls, ast_parser, item, use_chinese_segmentation):
+    def process_math23k(cls, ast_parser, item):
         if "千米/小时" in item["equation"]:
             item["equation"] = item["equation"][:-5]
         item['ans'] = re.sub('(\d+)\(\(', r'\1+((', item['ans'])
-        lang = item.get('lang', 'zh')
         try:
             tree, ans, val, tree_v = equation2tree(ast_parser, item['equation'], item['ans'])
             item['equation'] = pformat_flat(tree)
-            if lang == 'zh':
-                tokens = []
-                for w in jieba.cut(''.join(item['segmented_text'].split())):
-                    try:
-                        w_val = eval(w)
-                        w_int = int(w_val)
-                        if w_int == w_val:
-                            tokens.append(str(w_int))
-                        else:
-                            tokens.append(w)
-                    except:
-                        tokens.append(w)
-
-                item['segmented_text'] = ' '.join(re.split('(\d+.?\d+)', ' '.join(tokens)))
-                if not use_chinese_segmentation:
-                    tl = []
-                    for w in item['segmented_text'].split():
-                        if isfloat(w):
-                            tl.append(w)
-                        else:
-                            tl.extend(list(w))
-                    item['segmented_text'] = ' '.join(tl)
             item['problem'] = item['segmented_text']
             item['process_type'] = 'math23k'
+            if 'lang' not in item:
+                item['lang'] = 'zh'
             return item
         except Exception as e:
             print(e, item)
@@ -95,6 +74,7 @@ class Processor:
                 item['problem'] = item['Problem']
                 item['equation'] = tree
                 item['process_type'] = 'mathqa'
+                item['lang'] = 'en'
                 return item
             else:
                 raise ValueError('Answer is not acceptable!')
@@ -216,8 +196,7 @@ class Math2TreeDatasetReader(DatasetReader):
                             item = Processor.process_mathqa(self.ast_parser, item, filtered_ops[op_type])
                             status = 'ok' if item is not None else 'err'
                         else:
-                            item = Processor.process_math23k(self.ast_parser, item,
-                                                             use_chinese_segmentation=self._chinese_segmentation)
+                            item = Processor.process_math23k(self.ast_parser, item)
                             if op_type == "disallow_pow" and item and "Pow" in item['equation']:
                                 status = 'err'
                             else:
@@ -288,6 +267,33 @@ class Math2TreeDatasetReader(DatasetReader):
             out.append(ids.setdefault(token.text, len(ids)))
         return out
 
+    def _segment(self, item):
+        if item.get('lang') == 'en':
+            return item['problem']
+
+        if self._chinese_segmentation:
+            tokens = []
+            for w in jieba.cut(''.join(item['problem'].split())):
+                try:
+                    w_val = eval(w)
+                    w_int = int(w_val)
+                    if w_int == w_val:
+                        tokens.append(str(w_int))
+                    else:
+                        tokens.append(w)
+                except:
+                    tokens.append(w)
+
+            return ' '.join(re.split('(\d+.?\d+)', ' '.join(tokens)))
+        else:
+            tl = []
+            for w in item['segmented_text'].split():
+                if isfloat(w):
+                    tl.append(w)
+                else:
+                    tl.extend(list(w))
+            return ' '.join(tl)
+
     @overrides
     def text_to_instance(self, record: Dict) -> Instance:  # type: ignore
         """
@@ -303,7 +309,7 @@ class Math2TreeDatasetReader(DatasetReader):
         `Instance`
             See the above for a description of the fields that the instance will contain.
         """
-        source_string = record['problem']
+        source_string = self._segment(record)
         target_string = record['equation']
 
         tokenized_source = []
