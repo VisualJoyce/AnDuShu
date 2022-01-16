@@ -70,7 +70,7 @@ This repo includes the code for
 ### Annotations
 
 Annotations used for this paper can be found at 
-* BaiduNetDisk 链接：https://pan.baidu.com/s/1bjqJqxsAPM1cmBwrq9gePg?pwd=o734 
+* [百度网盘](https://pan.baidu.com/s/1bjqJqxsAPM1cmBwrq9gePg?pwd=o734)
 
 ![9B9A5987B7C1CF1482CAAF28B32AC0DE](https://user-images.githubusercontent.com/2136700/149643314-89aba90a-186b-4e1a-9882-e2923cadd00a.png)
 * [GoogleDrive](https://drive.google.com/drive/folders/1l6o1nE4qNS8gfjKK6Q8edQq4w4I53uIR?usp=sharing).
