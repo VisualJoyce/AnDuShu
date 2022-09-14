@@ -147,7 +147,6 @@ class CopyNetSeq2Seq(Model):
 
         initializer(self)
 
-    @overrides
     def forward(
             self,  # type: ignore
             source_tokens: TextFieldTensors,
@@ -885,7 +884,6 @@ class CopyNetSeq2Seq(Model):
                 predicted_tokens.append(batch_predicted_tokens)
         return predicted_tokens
 
-    @overrides
     def make_output_human_readable(self, output_dict: Dict[str, torch.Tensor]) -> Dict[str, Any]:
         """
         Finalize predictions.

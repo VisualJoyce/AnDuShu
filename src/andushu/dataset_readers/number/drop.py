@@ -17,7 +17,6 @@ from allennlp.data.instance import Instance
 from allennlp.data.token_indexers import SingleIdTokenIndexer, TokenIndexer
 from allennlp.data.tokenizers import Token, Tokenizer, SpacyTokenizer
 from overrides import overrides
-from word2number.w2n import word_to_num
 
 logger = logging.getLogger(__name__)
 
@@ -101,7 +100,6 @@ class DropReader(DatasetReader):
         self.instance_format = instance_format
         self.relaxed_span_match_for_finding_labels = relaxed_span_match_for_finding_labels
 
-    @overrides
     def _read(self, file_path: str):
         # if `file_path` is a URL, redirect to the cache
         file_path = cached_path(file_path)
@@ -136,7 +134,6 @@ class DropReader(DatasetReader):
                     skip_count += 1
         logger.info(f"Skipped {skip_count} questions, kept {kept_count} questions.")
 
-    @overrides
     def text_to_instance(self,  # type: ignore
                          question_text: str,
                          passage_text: str,

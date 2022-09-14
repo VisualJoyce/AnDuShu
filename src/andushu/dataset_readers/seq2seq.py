@@ -68,7 +68,6 @@ class Seq2SeqDatasetReader(DatasetReader):
                 UserWarning,
             )
 
-    @overrides
     def _read(self, file_path):
         with open(cached_path(file_path), "r") as data_file:
             logger.info("Reading instances from lines in file at: %s", file_path)
@@ -91,7 +90,6 @@ class Seq2SeqDatasetReader(DatasetReader):
             out.append(ids.setdefault(token.text, len(ids)))
         return out
 
-    @overrides
     def text_to_instance(self, source_string: str, target_string: str = None) -> Instance:  # type: ignore
         # pylint: disable=arguments-differ
         tokenized_source = self._source_tokenizer.tokenize(source_string)
@@ -129,7 +127,6 @@ class Seq2SeqDatasetReader(DatasetReader):
 
         return Instance(fields_dict)
 
-    @overrides
     def apply_token_indexers(self, instance: Instance) -> None:
         instance.fields["source_tokens"]._token_indexers = self._source_token_indexers  # type: ignore
         if "target_tokens" in instance.fields:

@@ -5,7 +5,7 @@ from allennlp.common import Registrable
 from allennlp.modules import Embedding
 from torch.nn import Module
 
-from andushu.fields.production_rule_field import ProductionRuleFieldTensors
+from andushu.data.fields import ProductionRuleFieldTensors
 
 
 class TreeDecoder(Module, Registrable):

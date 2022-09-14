@@ -178,7 +178,6 @@ class ProductionRuleField(Field[ProductionRule]):  # type: ignore
         #     tensor = None
         # return ProductionRule(self.rule, self.is_global_rule, tensor, self.nonterminal)
 
-    @overrides
     def empty_field(self):
         text_field = ProductionRuleField(Production(Nonterminal(''), ()), [], (0, 0), self._token_indexers)
         text_field._indexed_tokens = {}

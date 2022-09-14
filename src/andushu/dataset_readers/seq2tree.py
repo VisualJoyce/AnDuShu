@@ -11,10 +11,9 @@ from allennlp.data.instance import Instance
 from allennlp.data.token_indexers import TokenIndexer, SingleIdTokenIndexer
 from allennlp.data.tokenizers import Token, Tokenizer, WhitespaceTokenizer
 from nltk import Tree, Production, Nonterminal
-from nltk.tree import _child_names
-from overrides import overrides
+from nltk.tree.tree import _child_names
 
-from andushu.fields import ProductionRuleField
+from andushu.data.fields import ProductionRuleField
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
@@ -104,22 +103,20 @@ class Seq2TreeDatasetReader(DatasetReader):
         self._target_token_indexers = target_token_indexers or self._source_token_indexers
         self._source_add_start_token = source_add_start_token
 
-    @overrides
     def _read(self, file_path):
         with open(cached_path(file_path), "r") as data_file:
             logger.info("Reading instances from lines in file at: %s", file_path)
-            for line_num, line in enumerate(data_file):
-                line = line.strip("\n")
-                if not line:
-                    continue
-
+            example_iter = (line.strip("\n") for line in data_file if line.strip("\n"))
+            filtered_example_iter = (
+                example for example in example_iter
+            )
+            for line in self.shard_iterable(filtered_example_iter):
                 line_parts = line.split('\t')
                 if len(line_parts) != 2:
-                    raise ConfigurationError("Invalid line format: %s (line number %d)" % (line, line_num + 1))
+                    raise ConfigurationError("Invalid line: %s" % line)
                 source_sequence, target_sequence = line_parts
                 yield self.text_to_instance(source_sequence, target_sequence)
 
-    @overrides
     def text_to_instance(self, source_string: str, target_string: str = None) -> Instance:  # type: ignore
         # pylint: disable=arguments-differ
         tokenized_source = self._source_tokenizer.tokenize(source_string)

@@ -22,8 +22,8 @@ from allennlp.nn import util
 # from allennlp.state_machines.transition_functions import LinkingTransitionFunction
 from allennlp.training.metrics import Average, CategoricalAccuracy
 
+from andushu.data.fields.production_rule_field import ProductionRule
 from andushu.data.worlds.quarel_world import QuarelWorld
-from andushu.fields.production_rule_field import ProductionRule
 from andushu.nn.beam_search import BeamSearch
 
 
@@ -178,7 +178,6 @@ class QuarelSemanticParser(Model):
                                                        mixture_feedforward=mixture_feedforward,
                                                        dropout=dropout)
 
-    @overrides
     def forward(self,  # type: ignore
                 question: Dict[str, torch.LongTensor],
                 table: Dict[str, torch.LongTensor],

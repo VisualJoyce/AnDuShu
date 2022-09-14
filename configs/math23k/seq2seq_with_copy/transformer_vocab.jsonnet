@@ -91,7 +91,7 @@ local NUM_GRADIENT_ACCUMULATION_STEPS = if MODEL_NAME == 'xlm-roberta-base' then
     }
   },
   "data_loader": {
-    "num_workers": 4,
+    "num_workers": 8,
     "batch_sampler": {
       "type": "bucket",
       "padding_noise": 0.0,

@@ -398,7 +398,6 @@ class AutoRegressiveSeqDecoder(SeqDecoder):
                 all_metrics.update(self._token_based_metric.get_metric(reset=reset))  # type: ignore
         return all_metrics
 
-    @overrides
     def forward(
             self,
             encoder_out: Dict[str, torch.LongTensor],
@@ -655,7 +654,6 @@ class AutoRegressiveSeqDecoderWithCopy(SeqDecoder):
         )
         return new_target_tokens
 
-    @overrides
     def forward(
             self,
             encoder_out: Dict[str, torch.LongTensor],

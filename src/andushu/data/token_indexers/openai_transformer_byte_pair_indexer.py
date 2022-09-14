@@ -230,11 +230,9 @@ class OpenaiTransformerBytePairIndexer(TokenIndexer):
             # "mask": [1 for _ in offsets]
         }
 
-    @overrides
     def get_padding_lengths(self, token: int) -> Dict[str, int]:  # pylint: disable=unused-argument
         return {}
 
-    @overrides
     def as_padded_tensor_dict(self,
                               tokens: Dict[str, List[int]],
                               padding_lengths: Dict[str, int]) -> Dict[

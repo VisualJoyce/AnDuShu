@@ -296,7 +296,6 @@ class CCKS2021DatasetReader(DatasetReader):
                         "answer": item['答案'],
                     }
 
-    @overrides
     def _read(self, file_path):
         func = getattr(self, f'_read_ccks2021')
         for item in self.shard_iterable(func(file_path)):
@@ -310,7 +309,6 @@ class CCKS2021DatasetReader(DatasetReader):
             out.append(ids.setdefault(token.text, len(ids)))
         return out
 
-    @overrides
     def text_to_instance(self, record: Dict) -> Instance:  # type: ignore
         """
         Turn raw source string and target string into an `Instance`.
@@ -362,7 +360,6 @@ class CCKS2021DatasetReader(DatasetReader):
 
         return Instance(fields_dict)
 
-    @overrides
     def apply_token_indexers(self, instance: Instance) -> None:
         instance.fields["source_tokens"]._token_indexers = self._source_token_indexers  # type: ignore
         if "target_tokens" in instance.fields:

@@ -91,7 +91,6 @@ class ComposedSeq2Seq(Model):
             ] = self._decoder.target_embedder
         initializer(self)
 
-    @overrides
     def forward(
             self,  # type: ignore
             source_tokens: TextFieldTensors,

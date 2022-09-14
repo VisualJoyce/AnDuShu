@@ -16,7 +16,7 @@ from overrides import overrides
 from torch.nn import Linear
 
 from andushu.dataset_readers.seq2tree import NONTERMINAL_SYMBOL, PRODUCTION_START_SYMBOL
-from andushu.fields.production_rule_field import ProductionRuleFieldTensors
+from andushu.data.fields import ProductionRuleFieldTensors
 from andushu.modules.decoder_nets.decoder_net import DecoderNet
 from andushu.modules.tree_decoders.tree_decoder import TreeDecoder
 from andushu.nn.beam_search import BeamSearch
@@ -469,7 +469,6 @@ class HierarchicalTreeDecoder(TreeDecoder):
                 all_metrics.update(self._token_based_metric.get_metric(reset=reset))  # type: ignore
         return all_metrics
 
-    @overrides
     def forward(
             self,
             encoder_out: Dict[str, torch.LongTensor],

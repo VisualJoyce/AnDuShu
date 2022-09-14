@@ -7,9 +7,8 @@ from allennlp.models.model import Model
 from allennlp.modules import TextFieldEmbedder, Seq2SeqEncoder, Embedding
 from allennlp.modules.text_field_embedders import BasicTextFieldEmbedder
 from allennlp.nn import util, InitializerApplicator
-from overrides import overrides
 
-from andushu.fields.production_rule_field import ProductionRuleFieldTensors
+from andushu.data.fields.production_rule_field import ProductionRuleFieldTensors
 from andushu.modules.tree_decoders.tree_decoder import TreeDecoder
 
 
@@ -92,7 +91,6 @@ class Seq2Tree(Model):
             ] = self._decoder.target_embedder
         initializer(self)
 
-    @overrides
     def forward(
             self,  # type: ignore
             source_tokens: TextFieldTensors,
@@ -122,7 +120,6 @@ class Seq2Tree(Model):
 
         return self._decoder(state, target_tokens, production_rules, metadata)
 
-    @overrides
     def make_output_human_readable(
             self, output_dict: Dict[str, torch.Tensor]
     ) -> Dict[str, torch.Tensor]:
@@ -157,7 +154,6 @@ class Seq2Tree(Model):
         encoder_outputs = self._encoder(embedded_input, source_mask)
         return {"source_mask": source_mask, "encoder_outputs": encoder_outputs}
 
-    @overrides
     def get_metrics(self, reset: bool = False) -> Dict[str, float]:
         return self._decoder.get_metrics(reset)
 

@@ -18,14 +18,13 @@ from allennlp.data.fields import SequenceLabelField
 from allennlp.data.instance import Instance
 from allennlp.data.token_indexers import TokenIndexer, SingleIdTokenIndexer
 from allennlp.data.tokenizers import Token, Tokenizer, SpacyTokenizer
-from overrides import overrides
 
 # from allennlp.semparse.contexts.knowledge_graph import KnowledgeGraph
 # from allennlp.semparse.contexts.quarel_utils import WorldTaggerExtractor, words_from_entity_string
 # from allennlp.semparse.contexts.quarel_utils import LEXICAL_CUES, align_entities
 # from allennlp.semparse.worlds.quarel_world import QuarelWorld
 from andushu.dataset_readers.kbqa.knowledge_graph import KnowledgeGraph
-from andushu.fields.knowledge_graph_field import KnowledgeGraphField
+from andushu.data.fields.knowledge_graph_field import KnowledgeGraphField
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
@@ -202,7 +201,6 @@ class QuarelDatasetReader(DatasetReader):
             output = [self._replace_stemmed_entities(data) for data in output]
         return output
 
-    @overrides
     def _read(self, file_path: str):
         # if `file_path` is a URL, redirect to the cache
         file_path = cached_path(file_path)
@@ -253,7 +251,6 @@ class QuarelDatasetReader(DatasetReader):
                                                 additional_metadata, world_extractions,
                                                 entity_literals, debug_counter=debug_counter)
 
-    @overrides
     def text_to_instance(self,  # type: ignore
                          question: str,
                          logical_forms: List[str] = None,

@@ -1,14 +1,13 @@
 import ast
 import re
 
-import spacy
 # from Levenshtein import jaro
 from more_itertools import locate, flatten
 from nltk import Tree
 
 # data_dir = '../../../../data'
 
-nlp = spacy.blank("en")
+# nlp = spacy.blank("en")
 operator_re = re.compile("<_ast.(\w+) object at ")
 numeric_const_pattern = '[-+]? (?: (?: \d* \. \d+ ) | (?: \d+ \.? ) )(?: [Ee] [+-]? \d+ ) ?'
 rx = re.compile(numeric_const_pattern, re.VERBOSE)

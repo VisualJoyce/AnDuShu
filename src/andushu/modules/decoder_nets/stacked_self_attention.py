@@ -131,7 +131,6 @@ class Decoder(nn.Module):
         self.layers = nn_util.clone(layer, num_layers)
         self.norm = LayerNorm(layer.size)
 
-    @overrides
     def forward(
         self,
         x: torch.Tensor,
