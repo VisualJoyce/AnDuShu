@@ -492,3 +492,62 @@ def eval_tree(tree, evaluation=False):
                     return val
                 else:
                     tree_copy[pos] = val
+
+
+class Processor:
+
+    @classmethod
+    def process_math23k(cls, ast_parser, item):
+        if "千米/小时" in item["equation"]:
+            item["equation"] = item["equation"][:-5]
+        item['ans'] = re.sub('(\d+)\(\(', r'\1+((', item['ans'])
+        try:
+            tree, ans, val, tree_v = equation2tree(ast_parser, item['equation'], item['ans'])
+            item['equation'] = pformat_flat(tree)
+            item['template'] = re.sub(r'\d*\.*\d+', 'N', item['equation'])
+            item['problem'] = item['segmented_text']
+            item['process_type'] = 'math23k'
+            if 'lang' not in item:
+                item['lang'] = 'zh'
+            return item
+        except Exception as e:
+            print(e, item)
+
+    @classmethod
+    def process_mathqa(cls, ast_parser, item, ops):
+        if len(item['Problem'].split()) > 128:
+            # print(item)
+            raise ValueError('Problem too long!')
+
+        if all([k not in item['annotated_formula'] for k in ops]):
+            tree = ast_parser.parse(item['annotated_formula'])
+            tree = update_tree(tree)
+            tree = pformat_flat(tree)
+
+            options = [item for item in re.findall('[a-e] \) ([^,]*)', item['options'])]
+            item['answer'] = options[ord(item['correct']) - ord('a')]
+
+            if ':' in item['answer']:
+                raise ValueError('Answer is not acceptable!')
+
+            val = eval_tree(tree)
+
+            answer = parse_answer(item['answer'])
+            decimal_len = answer[::-1].find('.')
+
+            ans = eval(answer)
+            if decimal_len > 0:
+                err = abs(round(val, decimal_len) - ans)
+            else:
+                err = abs(val - ans)
+
+            if ans != 'none' and abs(err / val) < 1e-4:
+                item['ans'] = ans
+                item['problem'] = item['Problem']
+                item['equation'] = tree
+                item['template'] = re.sub(r'\d*\.*\d+', 'N', item['equation'])
+                item['process_type'] = 'mathqa'
+                item['lang'] = 'en'
+                return item
+            else:
+                raise ValueError('Answer is not acceptable!')
