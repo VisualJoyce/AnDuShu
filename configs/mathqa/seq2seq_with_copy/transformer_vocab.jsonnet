@@ -47,7 +47,7 @@ local NUM_GRADIENT_ACCUMULATION_STEPS = if MODEL_NAME == 'xlm-roberta-base' then
   "train_data_path": dataset_path + "MathQA/train.json",
   "validation_data_path": dataset_path + "MathQA/dev.json",
   "model": {
-    "type": "copynet_seq2seq",
+    "type": "seq2seq",
     "source_text_embedder": {
       "token_embedders": {
         "bert": {
@@ -66,16 +66,29 @@ local NUM_GRADIENT_ACCUMULATION_STEPS = if MODEL_NAME == 'xlm-roberta-base' then
       "num_layers": 2,
       "bidirectional": true
     },
-    "attention": {
-      "type": "bilinear",
-      "vector_dim": 512,
-      "matrix_dim": 512
-    },
-    "beam_size": 5,
-    "max_decoding_steps": 100,
-    "target_embedding_dim": 100,
-    "target_namespace": "target_tokens",
-    "token_based_metric": "equation_answer_accuracy"
+    "decoder": {
+      "type": "auto_regressive_seq_decoder_with_copy",
+      "target_namespace": "target_tokens",
+      "target_embedder": {
+        "embedding_dim": 100,
+        "vocab_namespace": "target_tokens",
+        "trainable": true
+      },
+      "decoder_net": {
+        "type": "lstm_cell",
+        "decoding_dim": 512,
+        "target_embedding_dim": 100,
+        "attention": {
+          "type": "bilinear",
+          "vector_dim": 512,
+          "matrix_dim": 512
+        },
+        "bidirectional_input": true
+      },
+      "beam_size": 5,
+      "max_decoding_steps": 100,
+      "token_based_metric": "equation_answer_accuracy"
+    }
   },
   "data_loader": {
     "num_workers": 8,

@@ -18,9 +18,9 @@ from allennlp.data.tokenizers import (
     PretrainedTransformerTokenizer, SpacyTokenizer,
 )
 
+from andushu.data.fields import ArrayField
 from andushu.dataset_readers.math.equation2tree import AstParser, equation2tree, parse_answer, eval_tree, update_tree, \
     pformat_flat, isfloat, filtered_ops
-from andushu.data.fields import ArrayField
 
 
 class Processor:
@@ -33,6 +33,7 @@ class Processor:
         try:
             tree, ans, val, tree_v = equation2tree(ast_parser, item['equation'], item['ans'])
             item['equation'] = pformat_flat(tree)
+            item['template'] = re.sub(r'\d*\.*\d+', 'N', item['equation'])
             item['problem'] = item['segmented_text']
             item['process_type'] = 'math23k'
             if 'lang' not in item:
@@ -73,6 +74,7 @@ class Processor:
                 item['ans'] = ans
                 item['problem'] = item['Problem']
                 item['equation'] = tree
+                item['template'] = re.sub(r'\d*\.*\d+', 'N', item['equation'])
                 item['process_type'] = 'mathqa'
                 item['lang'] = 'en'
                 return item
@@ -623,6 +625,94 @@ class Math2TreeSeq2SeqDatasetReader(DatasetReader):
         #     fields_dict["source_token_ids"] = ArrayField(np.array(source_token_ids))
 
         # fields_dict["metadata"] = MetadataField(meta_fields)
+
+        return Instance(fields_dict)
+
+    def apply_token_indexers(self, instance: Instance) -> None:
+        instance.fields["source_tokens"]._token_indexers = self._source_token_indexers  # type: ignore
+        if "target_tokens" in instance.fields:
+            instance.fields["target_tokens"]._token_indexers = self._target_token_indexers  # type: ignore
+
+
+@DatasetReader.register("copynet_math2tree_with_consistency")
+class Math2TreeCopynetWithConsistencyDatasetReader(Math2TreeCopynetDatasetReader):
+
+    def __init__(
+            self,
+            read_type: str,
+            op_type: str,
+            source_tokenizer: Tokenizer = None,
+            target_tokenizer: Tokenizer = None,
+            source_token_indexers: Dict[str, TokenIndexer] = None,
+            target_token_indexers: Dict[str, TokenIndexer] = None,
+    ) -> None:
+        super().__init__(
+            read_type,
+            op_type,
+            source_tokenizer,
+            target_tokenizer,
+            source_token_indexers,
+            target_token_indexers,
+        )
+
+    def text_to_instance(self, record: Dict) -> Instance:  # type: ignore
+        """
+        Turn raw source string and target string into an `Instance`.
+
+        # Parameters
+
+        source_string : `str`, required
+        target_string : `str`, optional (default = `None`)
+
+        # Returns
+
+        `Instance`
+            See the above for a description of the fields that the instance will contain.
+        """
+        source_string = self._segment(record)
+        target_string = record['equation']
+
+        tokenized_source = []
+        for t in source_string.split():
+            if isfloat(t):
+                tokenized_source.append(Token(t))
+            else:
+                tokenized_source.extend(self._source_tokenizer.tokenize(t))
+
+        if not tokenized_source:
+            # If the tokenized source is empty, it will cause issues downstream.
+            raise ValueError(f"source tokenizer produced no tokens from source '{source_string}'")
+
+        source_field = TextField(tokenized_source)
+
+        # For each token in the source sentence, we keep track of the matching token
+        # in the target sentence (which will be the OOV symbol if there is no match).
+        source_to_target_field = NamespaceSwappingField(tokenized_source,
+                                                        self._target_token_indexers['tokens'].namespace)
+
+        meta_fields = {"source_tokens": [x.text for x in tokenized_source]}
+        fields_dict = {"source_tokens": source_field, "source_to_target": source_to_target_field}
+
+        if target_string is not None:
+            tokenized_target = self._target_tokenizer.tokenize(target_string)
+            tokenized_target.insert(0, Token(START_SYMBOL))
+            tokenized_target.append(Token(END_SYMBOL))
+            target_field = TextField(tokenized_target)
+
+            fields_dict["target_tokens"] = target_field
+            meta_fields["target_tokens"] = [y.text for y in tokenized_target[1:-1]]
+            source_and_target_token_ids = self._tokens_to_ids(tokenized_source + tokenized_target)
+            source_token_ids = source_and_target_token_ids[: len(tokenized_source)]
+            fields_dict["source_token_ids"] = ArrayField(np.array(source_token_ids))
+            target_token_ids = source_and_target_token_ids[len(tokenized_source):]
+            fields_dict["target_token_ids"] = ArrayField(np.array(target_token_ids))
+
+            meta_fields['ans'] = record['ans']
+        else:
+            source_token_ids = self._tokens_to_ids(tokenized_source)
+            fields_dict["source_token_ids"] = ArrayField(np.array(source_token_ids))
+
+        fields_dict["metadata"] = MetadataField(meta_fields)
 
         return Instance(fields_dict)
 
